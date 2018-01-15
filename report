@@ -1,0 +1,3 @@
+report
+
+needed to do discrete movement skips (from one grid square to next), since otherwise it would be very hard to time turning corners e.g. goign from one row to the next as you would have to be quite precise. if discrete then not so 

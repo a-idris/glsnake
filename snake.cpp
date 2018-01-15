@@ -7,17 +7,16 @@
 #include <stddef.h>
 #include <iostream>
 
-//turn on unseen geometry so that the unseen polygons of the snake aren't drawn
 
 //snake block
 //for head, direction = arrow direction (last changed)
 //for else, direction = prev direction of next block
 
-// class Snake {
-// private:
-// 	SnakeBlock head;
-// 	int length, score;
-// }
+/*class Snake {
+private:
+	SnakeBlock head;
+	int length, score;
+}*/
 
 // class SnakeBlock {
 	
@@ -26,6 +25,8 @@
 // 		//vector direction;
 // 		SnakeBlock getNextSnakeBlock();
 // }
+
+// "SCHEDULE TURN"
 
 /*game: grid, snake.
 
@@ -38,12 +39,13 @@ void orthographic_vv();
 void perspective_vv();
 
 const int grid_size = 20;
+const float midW = grid_size / 2.0f, midH = grid_size / 2.0f;
 
 unsigned int g_grid = 0;
 
 float camera_delta = 0.5f;
-float camera_xoffset = 0.0f;
-float camera_zoffset = grid_size / 2.0f;
+float camera_xoffset = midW;
+float camera_zoffset = 0.0f; // change initial value = 0 + CONST
 
 enum perspective_t {ORTHOGRAPHIC=0, PERSPECTIVE=1, PERSPECTIVES_COUNT = 2};
 perspective_t current_perspective = PERSPECTIVE;
@@ -80,18 +82,17 @@ void display()
 	glLoadIdentity();
 
 	if (current_perspective == ORTHOGRAPHIC) {
-		gluLookAt(0, 3, 0,
-				  0, 0, 0,
+		gluLookAt(midW, 3, -midH,
+				  midW, 0, -midH,
 				  0, 0, -1);		
 	} else if (current_perspective == PERSPECTIVE) {
 		gluLookAt(camera_xoffset, grid_size, camera_zoffset,
-				  0, 0, 0,
+				  midW, 0, -midH,
 				  0, 1, 0);
 	}
 	//if pov, camera pos = snake head, look direction = head + direction
 
-	//animate game state. vars for xpos, ypos, etc.
-
+	//disable lighting to draw grid
 	glDisable(GL_LIGHTING);
 	glColor3f(1.0f, 1.0f, 1.0f);
 	glCallList(g_grid);
@@ -100,33 +101,49 @@ void display()
 	set_material(snake_mat);
 
 	glPushMatrix();
-	glTranslatef(0.5f, 0.5f, 0.5f);
+	glTranslatef(0.5f, 0.5f, -0.5f);
 
 
-	glutSolidCube(1);
+	for (size_t rows = 0; rows <= grid_size; rows++) {
+		glPushMatrix();
+		glTranslatef(rows / 5.0f, 0.0f, -rows);
+		glutSolidCube(1);		
+		glPopMatrix();
+		glPushMatrix();
+		glTranslatef(rows / 5.0f, 0.0f, -rows);		
+		glutSolidCube(1);		
+		glPopMatrix();
+	}
 
-	glPushMatrix();
-	glTranslatef(5.0f, 0.0f, 1.0f);
-	glutSolidCube(1);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(5.0f, 0.0f, 1.0f);
-	glutSolidCube(1);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(9.0f, 0.0f, 9.0f);
-	glutSolidCube(1);
-	glPopMatrix();
+	// glutSolidCube(1);
 
 	glPushMatrix();
 	glTranslatef(9.0f, 0.0f, -9.0f);
 	glutSolidCube(1);
 	glPopMatrix();
 
+	glPushMatrix();
+	glTranslatef(5.0f, 0.0f, 1.0f);
+	// glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(19.0f, 0.0f, -19.0f);
+	glutSolidCube(1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(19.0f, 0.0f, -9.0f);
+	glutSolidCube(1);
+	glPopMatrix();
+
 
 	glPopMatrix();
+
+	//for each snake block, animate (translate by x,y)
+	//animate food, if applicable
+	//if (food.up)
+	//	food.x, food.y 
 
 	glutSwapBuffers(); 
 }
@@ -134,29 +151,23 @@ void display()
 
 unsigned int make_grid(int w, int h) {
 
-
-	//translate -midW, midH
-
-	float midW = w / 2.0f;
-	float midH = h / 2.0f;
-
 	unsigned int handle = glGenLists(1);
 
 	glNewList(handle, GL_COMPILE);
-	// glMatrixMode(GL_MODELVIEW);
-	// glColor3f(1.0f, 0.0f, 0.0f);
+
 	glColor3f(1.0f, 1.0f, 1.0f);
+
+
 
 	glBegin(GL_LINES);
 	for (size_t columns = 0; columns <= w; columns++) {
-		glVertex3f(columns - midW, 0.0f, -midH);		
-		glVertex3f(columns - midW, 0.0f, midH);		
+		glVertex3f(columns, 0.0f, 0.0f);		
+		glVertex3f(columns, 0.0f, -h);		
 	}
-	// glColor3f(0.0f, 0.0f, 1.0f);
 
 	for (size_t rows = 0; rows <= h; rows++) {
-		glVertex3f(-midW, 0.0f, rows - midH);		
-		glVertex3f(midW, 0.0f, rows - midH);		
+		glVertex3f(0.0f, 0.0f, -rows);		
+		glVertex3f(w, 0.0f, -rows);		
 	}
 	glEnd();
 	
@@ -198,13 +209,13 @@ void orthographic_vv() {
 	glLoadIdentity();
 
 	float half_grid_size = grid_size / 2.0f;
-	glOrtho(-half_grid_size - 1, half_grid_size + 1, -half_grid_size - 1, half_grid_size + 1, 3, 4);
+	glOrtho(-half_grid_size - 1, half_grid_size + 1, -half_grid_size - 1, half_grid_size + 1, 1.5, 4);
 }
 
 void perspective_vv() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(60.0f, 1.0f, grid_size * 0.4f, grid_size * 2.0f);
+	gluPerspective(90.0f, 1.0f, grid_size * 0.1f, grid_size * 10.0f);
 }
 
 void init_lights() {
@@ -222,15 +233,25 @@ void init_lights() {
 	glEnable(GL_LIGHT0);
 }
 
+//30, 60 fps. change x,ypos proportional to time since last.
+
+// time_t last_time;
+
 // our idle handler
 void idle()
 {
-	//static int count = 0;
-	//std::cerr << "\t idle handler called..." << ++count << std::endl;
+	// time_passed = time - last_time;
+	//change PROPORTIONALLY 
 
-	//time handling?
+	// update(time_passed);
 
-	glutPostRedisplay(); // uncomment if you change any drawing state
+	// if (render) {
+	// 	glutPostRedisplay();
+	// }
+}
+
+void update(int time_incr) {
+
 }
 
 void visibility(int vis)
@@ -239,6 +260,7 @@ void visibility(int vis)
 	if (vis==GLUT_VISIBLE)
 	{
 		//start drawing
+		//render = true
 	}
 	else
 	{
@@ -265,7 +287,7 @@ void keyboard(unsigned char key, int, int)
 	{
 		case 'q': exit(1); // quit!
 
-		//WASD for camera movement?
+		//ADD BOUNDS TO CAMERA MOVEMENT E.G. MIN(MAX(0, CAMERA_XOFFSET), GRID_SIZE)
 
 		case 'w': 
 			camera_zoffset -= camera_delta; break;

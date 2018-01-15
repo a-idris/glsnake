@@ -82,7 +82,7 @@ void display()
 	glLoadIdentity();
 
 	if (current_perspective == ORTHOGRAPHIC) {
-		gluLookAt(midW, 3, -midH,
+		gluLookAt(midW, grid_size, -midH,
 				  midW, 0, -midH,
 				  0, 0, -1);		
 	} else if (current_perspective == PERSPECTIVE) {
@@ -101,24 +101,13 @@ void display()
 	set_material(snake_mat);
 
 	glPushMatrix();
-	glTranslatef(0.5f, 0.5f, -0.5f);
+	glScalef(1.0f, 1.0f, -1.0f);
+	glTranslatef(0.5f, 0.5f, 0.5f);
 
-
-	for (size_t rows = 0; rows <= grid_size; rows++) {
-		glPushMatrix();
-		glTranslatef(rows / 5.0f, 0.0f, -rows);
-		glutSolidCube(1);		
-		glPopMatrix();
-		glPushMatrix();
-		glTranslatef(rows / 5.0f, 0.0f, -rows);		
-		glutSolidCube(1);		
-		glPopMatrix();
-	}
-
-	// glutSolidCube(1);
+	glutSolidCube(1);
 
 	glPushMatrix();
-	glTranslatef(9.0f, 0.0f, -9.0f);
+	glTranslatef(9.0f, 0.0f, 9.0f);
 	glutSolidCube(1);
 	glPopMatrix();
 
@@ -128,12 +117,12 @@ void display()
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(19.0f, 0.0f, -19.0f);
+	glTranslatef(19.0f, 0.0f, 19.0f);
 	glutSolidCube(1);
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(19.0f, 0.0f, -9.0f);
+	glTranslatef(19.0f, 0.0f, 9.0f);
 	glutSolidCube(1);
 	glPopMatrix();
 
@@ -157,15 +146,13 @@ unsigned int make_grid(int w, int h) {
 
 	glColor3f(1.0f, 1.0f, 1.0f);
 
-
-
 	glBegin(GL_LINES);
 	for (size_t columns = 0; columns <= w; columns++) {
 		glVertex3f(columns, 0.0f, 0.0f);		
 		glVertex3f(columns, 0.0f, -h);		
 	}
 
-	for (size_t rows = 0; rows <= h; rows++) {
+	for (int rows = 0; rows <= h; rows++) {
 		glVertex3f(0.0f, 0.0f, -rows);		
 		glVertex3f(w, 0.0f, -rows);		
 	}
@@ -209,13 +196,13 @@ void orthographic_vv() {
 	glLoadIdentity();
 
 	float half_grid_size = grid_size / 2.0f;
-	glOrtho(-half_grid_size - 1, half_grid_size + 1, -half_grid_size - 1, half_grid_size + 1, 1.5, 4);
+	glOrtho(-half_grid_size - 1, half_grid_size + 1, -half_grid_size - 1, half_grid_size + 1, grid_size - 2, grid_size + 2);
 }
 
 void perspective_vv() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(90.0f, 1.0f, grid_size * 0.1f, grid_size * 10.0f);
+	gluPerspective(60.0f, 1.0f, grid_size * 0.4f, grid_size * 2.0f);
 }
 
 void init_lights() {

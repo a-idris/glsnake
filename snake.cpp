@@ -6,31 +6,7 @@
 
 #include <stddef.h>
 #include <iostream>
-
-
-//snake block
-//for head, direction = arrow direction (last changed)
-//for else, direction = prev direction of next block
-
-/*class Snake {
-private:
-	SnakeBlock head;
-	int length, score;
-}*/
-
-// class SnakeBlock {
-	
-// 	public:
-// 		int xpos, ypos;
-// 		//vector direction;
-// 		SnakeBlock getNextSnakeBlock();
-// }
-
-// "SCHEDULE TURN"
-
-/*game: grid, snake.
-
-*/
+#include <ctime>
 
 //decls:
 void draw_border(int, int);
@@ -42,6 +18,8 @@ const int grid_size = 20;
 const float midW = grid_size / 2.0f, midH = grid_size / 2.0f;
 
 unsigned int g_grid = 0;
+
+bool render = true;
 
 float camera_delta = 0.5f;
 float camera_xoffset = midW;
@@ -101,8 +79,9 @@ void display()
 	set_material(snake_mat);
 
 	glPushMatrix();
-	glScalef(1.0f, 1.0f, -1.0f);
-	glTranslatef(0.5f, 0.5f, 0.5f);
+	glScalef(1.0f, 1.0f, -1.0f); //reflect in xy plane
+
+	glTranslatef(0.5f, 0.5f, 0.5f); // translate cube so its left corner is at 0,0,0 
 
 	glutSolidCube(1);
 
@@ -158,7 +137,7 @@ unsigned int make_grid(int w, int h) {
 	}
 	glEnd();
 	
-	draw_border(w,h);
+	// draw_border(w,h);
 
 	glEndList();
 
@@ -166,14 +145,19 @@ unsigned int make_grid(int w, int h) {
 } 
 
 void draw_border(int w, int h) {
-
-}
-
-
-bool check_alive() {
-	//collided with itself
-	//collided with wall
-	return true;
+	float border_height = 0.7;
+	glBegin(GL_QUAD_STRIP);
+	glVertex3f(0.0f, border_height, 0.0f);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(w, border_height, 0.0f);
+	glVertex3f(w, 0.0f, 0.0f);
+	glVertex3f(w, border_height, -h);
+	glVertex3f(w, 0.0f, -h);
+	glVertex3f(0.0f, border_height, -h);
+	glVertex3f(0.0f, 0.0f, -h);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(0.0f, border_height, 0.0f);
+	glEnd();
 }
 
 
@@ -189,6 +173,9 @@ void init()
 	init_lights();
 	glEnable(GL_DEPTH_TEST);
 	glShadeModel(GL_FLAT);
+
+	start_time = std::time();
+	Game game (grid_size);
 }
 
 void orthographic_vv() {
@@ -228,17 +215,17 @@ void init_lights() {
 void idle()
 {
 	// time_passed = time - last_time;
-	//change PROPORTIONALLY 
+	//change PROPORTIONALLY
+
+	game::update(time_passed); 
 
 	// update(time_passed);
 
-	// if (render) {
-	// 	glutPostRedisplay();
-	// }
-}
-
-void update(int time_incr) {
-
+	if (render) {
+		glutPostRedisplay();
+	} else {
+		//sleep(1); ?
+	}
 }
 
 void visibility(int vis)
@@ -247,11 +234,12 @@ void visibility(int vis)
 	if (vis==GLUT_VISIBLE)
 	{
 		//start drawing
-		//render = true
+		render = true;
 	}
 	else
 	{
 		//stop drawing
+		render = false;
 	}
 }
 
@@ -302,18 +290,27 @@ void keyboard(unsigned char key, int, int)
 void special(int key, int, int)
 {
 	// handle special keys
+	vector_t direction;
 	switch (key)
 	{
 		case GLUT_KEY_LEFT: 
-			// vector = (-1, 0); break;
+			direction = { -1, 0 };
+			game::change_direction(direction); 
+			break;
 		case GLUT_KEY_RIGHT: 
-			// vector = (1, 0); break;
+			direction = { 1, 0 };
+			game::change_direction(direction); 
+			break;
 		case GLUT_KEY_UP: 
-			// vector = (0, 1); break;
+			direction = { 0, 1 };
+			game::change_direction(direction); 
+			break;
 		case GLUT_KEY_DOWN: 
-			// vector = (0, -1); 
-		break;
+			direction = { 0, -1 };
+			game::change_direction(direction); 
+			break; 
 	}
+	//if (direction) game::change_direction(direction);
 
 	glutPostRedisplay(); // force a redraw
 }
@@ -339,6 +336,3 @@ int main(int argc, char* argv[])
 
 	return 0; 
 }
-
-
-

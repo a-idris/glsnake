@@ -14,10 +14,13 @@ void init_lights();
 void orthographic_vv();
 void perspective_vv();
 
-const int grid_size = 20;
-const float midW = grid_size / 2.0f, midH = grid_size / 2.0f;
 
-unsigned int g_grid = 0;
+const int GRID_SIZE = 20; //default grid size
+const float midW = GRID_SIZE / 2.0f, midH = GRID_SIZE / 2.0f;
+
+Game game (GRID_SIZE);
+
+unsigned int g_grid = 0; //grid display list handle
 
 bool render = true;
 
@@ -25,7 +28,10 @@ float camera_delta = 0.5f;
 float camera_xoffset = midW;
 float camera_zoffset = 0.0f; // change initial value = 0 + CONST
 
-enum perspective_t {ORTHOGRAPHIC=0, PERSPECTIVE=1, PERSPECTIVES_COUNT = 2};
+//time vars
+clock_t start_time, total_time, time;
+
+enum perspective_t { ORTHOGRAPHIC=0, PERSPECTIVE=1, PERSPECTIVES_COUNT=2 };
 perspective_t current_perspective = PERSPECTIVE;
 
 struct material_t {
@@ -60,11 +66,11 @@ void display()
 	glLoadIdentity();
 
 	if (current_perspective == ORTHOGRAPHIC) {
-		gluLookAt(midW, grid_size, -midH,
+		gluLookAt(midW, GRID_SIZE, -midH,
 				  midW, 0, -midH,
 				  0, 0, -1);		
 	} else if (current_perspective == PERSPECTIVE) {
-		gluLookAt(camera_xoffset, grid_size, camera_zoffset,
+		gluLookAt(camera_xoffset, GRID_SIZE, camera_zoffset,
 				  midW, 0, -midH,
 				  0, 1, 0);
 	}
@@ -83,28 +89,14 @@ void display()
 
 	glTranslatef(0.5f, 0.5f, 0.5f); // translate cube so its left corner is at 0,0,0 
 
-	glutSolidCube(1);
+	Snake * snake = game::get_snake();
 
-	glPushMatrix();
-	glTranslatef(9.0f, 0.0f, 9.0f);
-	glutSolidCube(1);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(5.0f, 0.0f, 1.0f);
-	// glutSolidCube(1);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(19.0f, 0.0f, 19.0f);
-	glutSolidCube(1);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(19.0f, 0.0f, 9.0f);
-	glutSolidCube(1);
-	glPopMatrix();
-
+	for (int i = 0, SnakeNode * node = snake->get_head(); i < snake->get_length(); i++, node = node->get_next()) {
+		glPushMatrix();
+		glTranslatef(node.get_x(), 0.0f, node.get_y());
+		glutSolidCube(1);
+		glPopMatrix();
+	}
 
 	glPopMatrix();
 
@@ -114,6 +106,10 @@ void display()
 	//	food.x, food.y 
 
 	glutSwapBuffers(); 
+
+	//score and time
+	float time = static_cast<int>(total_time / CLOCKS_PER_SEC * 10) / 10.0f; //convert total time to seconds w/ 1 d.p.precision !!!CLOCK / CLOCKS_PER_SEC YIELDS SECS 
+	std::cout << time << std::endl;
 }
 
 
@@ -166,30 +162,36 @@ void init()
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f); 
 
-	// make triangle display list
-	g_grid = make_grid(grid_size, grid_size);
+	// make grid display list
+	g_grid = make_grid(GRID_SIZE, GRID_SIZE);
 
+	//initialise in perspective view mode
 	perspective_vv();
 	init_lights();
 	glEnable(GL_DEPTH_TEST);
 	glShadeModel(GL_FLAT);
 
-	start_time = std::time();
-	Game game (grid_size);
+	//start time
+	start_time = clock();
+	total_time = start_time;
+	time = start_time;
+
+	//start the game
+	game::start(time);
 }
 
 void orthographic_vv() {
 	glMatrixMode(GL_PROJECTION); 
 	glLoadIdentity();
 
-	float half_grid_size = grid_size / 2.0f;
-	glOrtho(-half_grid_size - 1, half_grid_size + 1, -half_grid_size - 1, half_grid_size + 1, grid_size - 2, grid_size + 2);
+	float half_GRID_SIZE = GRID_SIZE / 2.0f;
+	glOrtho(-half_GRID_SIZE - 1, half_GRID_SIZE + 1, -half_GRID_SIZE - 1, half_GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE + 2);
 }
 
 void perspective_vv() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(60.0f, 1.0f, grid_size * 0.4f, grid_size * 2.0f);
+	gluPerspective(60.0f, 1.0f, GRID_SIZE * 0.4f, GRID_SIZE * 2.0f);
 }
 
 void init_lights() {
@@ -200,7 +202,7 @@ void init_lights() {
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 	// fix the light above the centre of the grid
-	float light_position[] = {0.0, grid_size * 0.9, 0.0, 0.0};
+	float light_position[] = {0.0, GRID_SIZE * 0.9, 0.0, 0.0};
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	// enable lighting and turn on the light0
 	glEnable(GL_LIGHTING);
@@ -209,22 +211,23 @@ void init_lights() {
 
 //30, 60 fps. change x,ypos proportional to time since last.
 
-// time_t last_time;
+
 
 // our idle handler
 void idle()
 {
-	// time_passed = time - last_time;
+
+	time = clock() - time; //get time elapsed since last call
+	total_time = clock() - start_time; //get total gameplay time to display on screen
 	//change PROPORTIONALLY
 
-	game::update(time_passed); 
-
-	// update(time_passed);
+	//maybe encode fps bound. while (time_passed > bound) time_passed -= bound; update();
+	game::update(time); 
 
 	if (render) {
 		glutPostRedisplay();
 	} else {
-		//sleep(1); ?
+		//sleep(1); ? //sleep max fps bound time diff ^^^
 	}
 }
 
@@ -260,7 +263,9 @@ void keyboard(unsigned char key, int, int)
 
 	switch (key)
 	{
-		case 'q': exit(1); // quit!
+		case 'q': 
+			dispose();
+			exit(1); // quit!
 
 		//ADD BOUNDS TO CAMERA MOVEMENT E.G. MIN(MAX(0, CAMERA_XOFFSET), GRID_SIZE)
 
@@ -314,7 +319,6 @@ void special(int key, int, int)
 
 	glutPostRedisplay(); // force a redraw
 }
-
 
 int main(int argc, char* argv[])
 {

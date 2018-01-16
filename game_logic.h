@@ -17,7 +17,7 @@ class Game {
 	private:
 		Snake * snake;
 		Food * food;
-		clock_t start_time, ongoing_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
+		long start_time, ongoing_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
 		float velocity;
 		int grid_size, score;
 	public:
@@ -26,9 +26,9 @@ class Game {
 		int get_score() const { return score; }
 		Snake * get_snake() const { return snake; } 
 		Food * get_food() const { return food; }
-		void update(clock_t time_elapsed);
+		void update(long time_elapsed);
 		void change_direction(vector_t);
-		void start(clock_t);
+		void start(long);
 };
 
 

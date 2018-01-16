@@ -29,13 +29,13 @@ Game::~Game() {
 	delete food;
 }
 
-void Game::start(clock_t time) {
+void Game::start(long time) {
 	start_time = time;
 	block_ongoing_time = 0;
 	food_ongoing_time = 0;
 }
 
-void Game::update(clock_t time_elapsed) {
+void Game::update(long time_elapsed) {
 	block_ongoing_time += time_elapsed;
 	food_ongoing_time += time_elapsed;
 
@@ -44,6 +44,7 @@ void Game::update(clock_t time_elapsed) {
 
 
 		block_ongoing_time -= block_time;
+
 		snake->update(); //move by 1 square
 		// usleep(100000);
 		

@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <iostream>
 #include <ctime>
+#include <time.h>
 
 #include "game_logic.h"
 #include "snake.h"
@@ -30,7 +31,7 @@ float camera_zoffset = 0.0f; // change initial value = 0 + CONST
 float camera_delta = 0.5f;
 
 //time vars
-clock_t start_time, total_time, timeElapsed;
+long start_time, total_time, timeElapsed;
 
 //initial viewing perspective 
 perspective_t current_perspective = PERSPECTIVE;
@@ -175,6 +176,23 @@ void set_material(const material_t& mat) {
 	glMaterialf(GL_FRONT, GL_SHININESS, mat.shininess);
 }
 
+timespec timeInMillis() {
+	timespec tp;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
+	std::cout << ctime(&(tp.tv_sec)) << std::endl;
+	return tp;
+}
+
+long toMillis(const timespec& tp) {
+	long milis = tp.tv_sec * 1000;
+	milis += static_cast<long>(tp.tv_nsec / 1000000.0f);
+	return milis; 
+}
+
+long time_diff(timespec larger, timespec smaller) {
+
+}
+
 void init()
 {
 
@@ -190,7 +208,7 @@ void init()
 	glShadeModel(GL_FLAT);
 
 	//start time
-	start_time = clock();
+	start_time = toMillis(timeInMillis());
 	total_time = start_time;
 	timeElapsed = start_time;
 
@@ -234,15 +252,14 @@ void init_lights() {
 // our idle handler
 void idle()
 {
-
-	timeElapsed = clock() - timeElapsed; //get time elapsed since last call
-	total_time = clock() - start_time; //get total gameplay time to display on screen
+	long milis = toMillis(timeInMillis());
+	timeElapsed = milis - timeElapsed; //get time elapsed since last call
+	total_time = milis - start_time; //get total gameplay time to display on screen
 	//change PROPORTIONALLY
-
 	//maybe encode fps bound. while (time_passed > bound) time_passed -= bound; update();
 
-	float secs = float(total_time) / CLOCKS_PER_SEC;
-	std::cout << secs * 10 << "s passed" << std::endl;
+	float secs = ((int)total_time / 100.0f) / 10.0f;
+	std::cout << secs << "s passed" << std::endl;
 	game.update(timeElapsed); 
 
 	//FPS LINKED TO VELOCITY?!?!?
@@ -255,6 +272,7 @@ void idle()
 		//sleep(1); ? //sleep max fps bound time diff ^^^
 	}
 }
+
 
 void visibility(int vis)
 {

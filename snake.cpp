@@ -242,8 +242,12 @@ void idle()
 	//maybe encode fps bound. while (time_passed > bound) time_passed -= bound; update();
 
 	float secs = float(total_time) / CLOCKS_PER_SEC;
-	std::cout << CLOCKS_PER_SEC << "s passed" << std::endl;
+	std::cout << secs * 10 << "s passed" << std::endl;
 	game.update(timeElapsed); 
+
+	//FPS LINKED TO VELOCITY?!?!?
+	//while (RUNNINT_TIME <= BOUNDARY)
+	// RUNNING_TIME += CLOCK_DIFF
 
 	if (render) {
 		glutPostRedisplay();

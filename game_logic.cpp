@@ -18,7 +18,8 @@ Game::Game(int grid_size) : grid_size(grid_size), score(0) {
 	velocity = 2.0f;
 	//time for a snake node to move one block at this velocity
 	// block distance / velocity (in clocks per sec))
-	block_time = 1 / (2.0f / CLOCKS_PER_SEC); //NEEDS FIXING
+	// block_time = 1 / (2.0f / CLOCKS_PER_SEC); //NEEDS FIXING
+	block_time = CLOCKS_PER_SEC; //NEEDS FIXING
 	int midpoint = static_cast<int>(grid_size / 2.0f);
 	snake = new Snake(midpoint, midpoint); //put snake in the middle of the grid initially
 }
@@ -30,15 +31,16 @@ Game::~Game() {
 
 void Game::start(clock_t time) {
 	start_time = time;
-	ongoing_time = 0;
+	block_ongoing_time = 0;
+	food_ongoing_time = 0;
 }
 
 void Game::update(clock_t time_elapsed) {
 	block_ongoing_time += time_elapsed;
 	food_ongoing_time += time_elapsed;
 
-	if (true) {
-	// if (block_ongoing_time >= block_time) {
+	// if (true) {
+	if (block_ongoing_time >= block_time) {
 
 
 		block_ongoing_time -= block_time;
@@ -46,42 +48,42 @@ void Game::update(clock_t time_elapsed) {
 		// usleep(100000);
 		
 		// int counter = 0;
-		clock_t start = clock();
+		// clock_t start = clock();
 
-		time_t timer1, timer2;
-		time(&timer1);
-		time(&timer2);
-		std::cout << ctime(&timer1) << std::endl;
-		// usleep(5000000);
+		// time_t timer1, timer2;
+		// time(&timer1);
 		// time(&timer2);
-		double diff = 0;
-		while (diff < 5) {
-			// t = clock() - t;
-			diff = difftime(timer2, timer1);
-			// std::cout << diff << "DIFF" << std::endl;
-			// std::cout << ctime(&timer2) << std::endl;
-			time(&timer2);
+		// std::cout << ctime(&timer1) << std::endl;
+		// // usleep(5000000);
+		// // time(&timer2);
+		// double diff = 0;
+		// while (diff < 5) {
+		// 	// t = clock() - t;
+		// 	diff = difftime(timer2, timer1);
+		// 	// std::cout << diff << "DIFF" << std::endl;
+		// 	// std::cout << ctime(&timer2) << std::endl;
+		// 	time(&timer2);
 
-			int j = 10;
-			for (int i = 0; i < 3; i++) {
-				j *= std::pow(j,i);
-			}
-			// usleep(1000000);
-			// usleep(1000000);
-			// std::cout << ++counter << std::endl;
+		// 	int j = 10;
+		// 	for (int i = 0; i < 3; i++) {
+		// 		j *= std::pow(j,i);
+		// 	}
+		// 	// usleep(1000000);
+		// 	// usleep(1000000);
+		// 	// std::cout << ++counter << std::endl;
 
-		}
+		// }
 
-		clock_t end = clock();
+		// clock_t end = clock();
 		
-		std::cout << float(end - start) / CLOCKS_PER_SEC << "SSS" <<diff << std::endl; 
+		// std::cout << float(end - start) / CLOCKS_PER_SEC << "SSS" <<diff << std::endl; 
 
 
-		vector_t direction = snake->get_head()->get_direction();
-		std::cout << "block_time " << block_time << std::endl;   
-		std::cout << "time elapsed  " << time_elapsed << std::endl;   
+		// vector_t direction = snake->get_head()->get_direction();
+		// std::cout << "block_time " << block_time << std::endl;   
+		// std::cout << "time elapsed  " << time_elapsed << std::endl;   
 
-		std::cout << direction.x << "," << direction.y << std::endl;   
+		// std::cout << direction.x << "," << direction.y << std::endl;   
 /*		if (!snake.isAlive()) {
 
 		} else {

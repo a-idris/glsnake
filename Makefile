@@ -4,12 +4,22 @@ LDLIBS = -lglut -lGL -lGLU -lX11 -lm
 CPPFLAGS= -O3 
 LDFLAGS= $(CPPFLAGS) $(LIBDIRS)
 
-TARGETS = snake
+# TARGETS = snake 
 
-SRCS = snake.cpp
+# SRCS = snake.cpp 
 
-OBJS =  $(SRCS:.cpp=.o)
+# OBJS =  $(SRCS:.cpp=.o)
 
 CXX = g++
 
-default: $(TARGETS)
+# default: $(TARGETS)
+
+OBJECTS=snake.o game_logic.o
+
+snake: $(OBJECTS)
+	$(CXX) $(LDFLAGS)  $(OBJECTS) -o snake $(LDLIBS)
+
+snake.o: snake.h game_logic.h
+
+game_logic.o: game_logic.h
+

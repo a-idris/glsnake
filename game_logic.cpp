@@ -1,13 +1,10 @@
-#ifdef __APPLE__
-#include <GLUT/glut.h> 
-#else
-#include <GL/glut.h> 
-#endif
-
+#include <cmath>
 #include <stddef.h>
 #include <iostream>
-#include <cmath>
-#include <ctime>
+
+#include <unistd.h>
+
+#include "game_logic.h"
 
 //snake block
 //for head, direction = arrow direction (last changed)
@@ -15,34 +12,20 @@
 
 // time to traverse one block = distance / velocity. thus increment time, once passed, snap to. update INTEGER coordinates
 
-
-class Game {
-	private:
-		Snake * snake;
-		Food food;
-		clock_t start_time, ongoing_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
-		float velocity;
-		int grid_size, score;
-	public:
-		Game(int grid_size);
-		~Game();
-		int get_score() const { return score; }
-		Snake * get_snake() const { return snake; } 
-		void update(clock_t time_elapsed);
-		void change_direction(vector_t);
-}
+//Game func implementations
 
 Game::Game(int grid_size) : grid_size(grid_size), score(0) {
 	velocity = 2.0f;
 	//time for a snake node to move one block at this velocity
 	// block distance / velocity (in clocks per sec))
-	block_time = 1 / 2.0f * CLOCKS_PER_SEC; //NEEDS FIXING
+	block_time = 1 / (2.0f / CLOCKS_PER_SEC); //NEEDS FIXING
 	int midpoint = static_cast<int>(grid_size / 2.0f);
 	snake = new Snake(midpoint, midpoint); //put snake in the middle of the grid initially
 }
 
 Game::~Game() {
 	delete snake;
+	delete food;
 }
 
 void Game::start(clock_t time) {
@@ -54,10 +37,51 @@ void Game::update(clock_t time_elapsed) {
 	block_ongoing_time += time_elapsed;
 	food_ongoing_time += time_elapsed;
 
-	if (block_ongoing_time >= block_time) {
+	if (true) {
+	// if (block_ongoing_time >= block_time) {
+
+
 		block_ongoing_time -= block_time;
 		snake->update(); //move by 1 square
+		// usleep(100000);
+		
+		// int counter = 0;
+		clock_t start = clock();
 
+		time_t timer1, timer2;
+		time(&timer1);
+		time(&timer2);
+		std::cout << ctime(&timer1) << std::endl;
+		// usleep(5000000);
+		// time(&timer2);
+		double diff = 0;
+		while (diff < 5) {
+			// t = clock() - t;
+			diff = difftime(timer2, timer1);
+			// std::cout << diff << "DIFF" << std::endl;
+			// std::cout << ctime(&timer2) << std::endl;
+			time(&timer2);
+
+			int j = 10;
+			for (int i = 0; i < 3; i++) {
+				j *= std::pow(j,i);
+			}
+			// usleep(1000000);
+			// usleep(1000000);
+			// std::cout << ++counter << std::endl;
+
+		}
+
+		clock_t end = clock();
+		
+		std::cout << float(end - start) / CLOCKS_PER_SEC << "SSS" <<diff << std::endl; 
+
+
+		vector_t direction = snake->get_head()->get_direction();
+		std::cout << "block_time " << block_time << std::endl;   
+		std::cout << "time elapsed  " << time_elapsed << std::endl;   
+
+		std::cout << direction.x << "," << direction.y << std::endl;   
 /*		if (!snake.isAlive()) {
 
 		} else {
@@ -85,58 +109,55 @@ void Game::update(clock_t time_elapsed) {
 }
 
 // "SCHEDULE TURN" / ENQUEUE>?!
-void change_direction(vector_t direction) {
-	snake.enqueue_direction(direction);
-	// snake.get_head().set_direction(direction);
+void Game::change_direction(vector_t direction) {
+	// snake->enqueue_direction(direction);
+	snake->get_head()->set_direction(direction);
 }
 
-class Snake {
-	private:
-		SnakeNode * head;
-		SnakeNode * tail;
-		size_t length;
-	public:
-		Snake();
-		Snake(int x, int y); 
-		SnakeNode * get_head() const { return head; }
-		SnakeNode * get_tail() const { return tail; }
-		void update();
-		void append();
-}
 
-Snake::Snake() length(1), head(0, 0) {
+//Snake func implementations
+
+Snake::Snake(): length(1) {
 	vector_t right = {1, 0};
-	head = new SnakeNode(0, 0, right);
+	head = new SnakeNode(0, 0);
+	head->set_direction(right);
 	head->set_next(NULL);
 	head->set_prev(NULL);
 	tail = head;
 }
 
-Snake::Snake(int x, int y) : head(x, y) {
-	head.set_next(null);
-	head.set_prev(null);
+Snake::Snake(int x, int y) : length(1) {
+	vector_t right = {1, 0};
+	head = new SnakeNode(x, y);
+	head->set_direction(right);
+	head->set_next(NULL);
+	head->set_prev(NULL);
+	tail = head;
 }
 
 Snake::~Snake() {
-	delete head; 
+	delete head; //will cascade, since SnakeNode will call delete on prev and next SnakeNodes
 }
 
 void Snake::update() {
 	//iterate through, update xpos, ypos based on directions etc
 
-	for (int i = 0, SnakeNode * snode = head; i < length; i++, snode = snode->get_next()) {
-		vector_t direction = snode->get_direction();
-		snode->set_x(snode->get_x() + direction.x);
-		snode->set_y(snode->get_y() + direction.y);
+	SnakeNode * snode = head;
+	for (int i = 0; i < length; i++) {
+		//update x and y by the direction vector 
+		snode->update();
+
 		if (snode == head)
 			continue;
 		//all the non head blocks get their new direction from the direction of the previous snake node
-		SnakeNode * prev = snode.get_prev();
-		snode.set_direction(prev->get_direction());
+		SnakeNode * prev = snode->get_prev();
+		vector_t direction = prev->get_direction();
+		snode->set_direction(direction);
+		snode = snode->get_next();
 	}
 }
 
-void append() {
+void Snake::append() {
 
 	//UPDATE AND THEN APPEND, BUT SAVE TAIL VALS BEFORE CHANGING ITS DIRECTION. TAIL_DIRECTION VAR. THEN CAN CALC PROPER X AND Y VALS FOR NEW NODE
 
@@ -155,31 +176,8 @@ void append() {
 	length++;
 }
 
-class SnakeNode {
-	private:
-		int x, y; //PRIVATE FLOAT, PUBLIC INT? OR 2 TYPES OF XPOS?
-		vector_t direction;
+//SnakeNode func implementations
 
-		//USE QUEUE OR DEQUE FOR DIRECTION. enqueu from change_direction, on update - dequeue?
-
-		SnakeNode * next;
-		SnakeNode * prev;
-	public:
-		SnakeNode() {};
-		SnakeNode(int x, int y): x(x), y(y);  
-		SnakeNode(int x, int y, vector_t directionVector): x(x), y(y), direction(direction) {} 
-		~SnakeNode();
-		int get_x() const { return x; }
-		int get_y() const { return y; }
-		vector_t get_direction() const { return direction; }
-		SnakeNode get_prev() const { return SnakeNode; }
-		SnakeNode get_next() const { return SnakeNode; }
-		void set_next(SnakeNode * next) { this.next = next; }
-		void set_prev(SnakeNode * prev) { this.prev = prev; }
-		void set_direction(vector_t&);
-
-
-}
 
 SnakeNode::SnakeNode(int x, int y) : x(x), y(y) {
 	vector_t right = {1, 0};
@@ -188,6 +186,7 @@ SnakeNode::SnakeNode(int x, int y) : x(x), y(y) {
 }
 
 SnakeNode::~SnakeNode() {
+	//if (next) delete next;
 	delete next;
 	delete prev;
 }
@@ -195,58 +194,46 @@ SnakeNode::~SnakeNode() {
 void SnakeNode::set_direction(vector_t & direction_vector) {
 	//error check
 
-	if queue.peek == vector 
-		return;
+	// if queue.peek == vector 
+		// return;
 
-	if (direction_vector.x + direction_vector.y != 1) {
+	if (std::abs(direction_vector.x) + std::abs(direction_vector.y) != 1) {
 		throw std::invalid_argument("direction vector must be of length 1 and corresponding to one of the cardinal directions");
 	}
 	direction = direction_vector;
 }
 
-void set_next(SnakeNode * next) { 
-	this.next = next; 
+// void SnakeNode::set_next(SnakeNode * next) { 
+// 	this->next = next; 
+// }
+
+// void SnakeNode::set_prev(SnakeNode * prev) { 
+// 	this->prev = prev; 
+// }
+
+void SnakeNode::update() {
+	x += direction.x;
+	y += direction.y;
 }
 
-void set_prev(SnakeNode * prev) { 
-	this.prev = prev; 
+// Food func implementations
+void Food::set_x(int x) {
+	this->x = x;
 }
 
-struct vector_t {
-	int x;
-	int y;
-};
-
-class Food {
-	private:
-		float x, y, radius;
-	public:
-		Food() {} 
-		float get_x() const { return x; }
-		float get_y() const { return y; }
-		float get_radius() const { return radius; }
-		void set_x(float);
-		void set_y(float);
-		void set_radius(float);
-		int set(float, float, float);
+void Food::set_y(int y) {
+	this->y = y;
 }
 
-void Food::set_x(float x) {
-	this.x = x;
+void Food::set_radius(int radius) {
+	this->radius = radius;
 }
 
-void Food::set_y(float y) {
-	this.y = y;
-}
+int Food::set(int x, int y, int radius) {
+	this->x = x;
+	this->y = y;
+	this->radius = radius;
 
-void Food::set_radius(float radius) {
-	this.radius = radius;
-}
-
-float Food::set(float x, float y, float radius) {
-	this.x = x;
-	this.y = y;
-	this.radius = radius;
-
-	return 5 + std::math
+	// return 5 + std::math
+	return 0;
 }

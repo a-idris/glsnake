@@ -8,38 +8,32 @@
 #include <iostream>
 #include <ctime>
 
-//decls:
-void draw_border(int, int);
-void init_lights();
-void orthographic_vv();
-void perspective_vv();
+#include "game_logic.h"
+#include "snake.h"
 
 
 const int GRID_SIZE = 20; //default grid size
 const float midW = GRID_SIZE / 2.0f, midH = GRID_SIZE / 2.0f;
 
+//initialise game
 Game game (GRID_SIZE);
 
-unsigned int g_grid = 0; //grid display list handle
+//grid display list handle
+unsigned int g_grid = 0; 
 
+//only render if window is visible
 bool render = true;
 
-float camera_delta = 0.5f;
+//camera controls
 float camera_xoffset = midW;
 float camera_zoffset = 0.0f; // change initial value = 0 + CONST
+float camera_delta = 0.5f;
 
 //time vars
-clock_t start_time, total_time, time;
+clock_t start_time, total_time, timeElapsed;
 
-enum perspective_t { ORTHOGRAPHIC=0, PERSPECTIVE=1, PERSPECTIVES_COUNT=2 };
+//initial viewing perspective 
 perspective_t current_perspective = PERSPECTIVE;
-
-struct material_t {
-	float ambient[4];
-	float diffuse[4];
-	float specular[4];
-	float shininess;
-};
 
 //snake material
 const material_t snake_mat = {
@@ -50,13 +44,19 @@ const material_t snake_mat = {
 };
 
 //food material 
+const material_t food_mat = {
+	{0.3f, 0.2f, 0.2f, 1.0f},
+	{0.6f, 0.15f, 0.15f, 1.0f}, 
+	{0.8f, 0.6f, 0.6f, 1.0f},
+	50.0f
+};
 
-void set_material(const material_t& mat) {
-	glMaterialfv(GL_FRONT, GL_AMBIENT, mat.ambient);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat.diffuse);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, mat.specular);
-	glMaterialf(GL_FRONT, GL_SHININESS, mat.shininess);
-}
+//decls
+void draw_border(int, int);
+void init_lights();
+void orthographic_vv();
+void perspective_vv();
+void set_material(const material_t &);
 
 void display()
 {
@@ -85,17 +85,29 @@ void display()
 	set_material(snake_mat);
 
 	glPushMatrix();
-	glScalef(1.0f, 1.0f, -1.0f); //reflect in xy plane
+	glScalef(1.0f, 1.0f, -1.0f); //reflect in xy plane ( since grid is in +x, -z quadrant)
 
-	glTranslatef(0.5f, 0.5f, 0.5f); // translate cube so its left corner is at 0,0,0 
+	glTranslatef(0.5f, 0.5f, 0.5f); // translate cube so its near left corner is at 0,0,0 
 
-	Snake * snake = game::get_snake();
+	// glutSolidCube(1);
+	set_material(food_mat);
+	glutSolidSphere(0.5, 32, 32);
+	set_material(snake_mat);
+	//draw snake blocks
+	Snake * snake = game.get_snake();
+	SnakeNode * node = snake->get_head();
+	
+	std::cout << "snake length = "<< snake->get_length() << std::endl;
 
-	for (int i = 0, SnakeNode * node = snake->get_head(); i < snake->get_length(); i++, node = node->get_next()) {
+	for (int i = 0; i < snake->get_length(); i++) {
 		glPushMatrix();
-		glTranslatef(node.get_x(), 0.0f, node.get_y());
+		// draw the x,y game coordinates in the xz plane using translation
+		std::cout << "cube " << i << std::endl;
+		glTranslatef(node->get_x(), 0.0f, node->get_y());
 		glutSolidCube(1);
 		glPopMatrix();
+
+		node = node->get_next();
 	}
 
 	glPopMatrix();
@@ -109,7 +121,7 @@ void display()
 
 	//score and time
 	float time = static_cast<int>(total_time / CLOCKS_PER_SEC * 10) / 10.0f; //convert total time to seconds w/ 1 d.p.precision !!!CLOCK / CLOCKS_PER_SEC YIELDS SECS 
-	std::cout << time << std::endl;
+	// std::cout << time << std::endl;
 }
 
 
@@ -156,6 +168,12 @@ void draw_border(int w, int h) {
 	glEnd();
 }
 
+void set_material(const material_t& mat) {
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat.ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat.diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat.specular);
+	glMaterialf(GL_FRONT, GL_SHININESS, mat.shininess);
+}
 
 void init()
 {
@@ -174,10 +192,10 @@ void init()
 	//start time
 	start_time = clock();
 	total_time = start_time;
-	time = start_time;
+	timeElapsed = start_time;
 
 	//start the game
-	game::start(time);
+	game.start(timeElapsed);
 }
 
 void orthographic_vv() {
@@ -217,12 +235,15 @@ void init_lights() {
 void idle()
 {
 
-	time = clock() - time; //get time elapsed since last call
+	timeElapsed = clock() - timeElapsed; //get time elapsed since last call
 	total_time = clock() - start_time; //get total gameplay time to display on screen
 	//change PROPORTIONALLY
 
 	//maybe encode fps bound. while (time_passed > bound) time_passed -= bound; update();
-	game::update(time); 
+
+	float secs = float(total_time) / CLOCKS_PER_SEC;
+	std::cout << CLOCKS_PER_SEC << "s passed" << std::endl;
+	game.update(timeElapsed); 
 
 	if (render) {
 		glutPostRedisplay();
@@ -264,7 +285,6 @@ void keyboard(unsigned char key, int, int)
 	switch (key)
 	{
 		case 'q': 
-			dispose();
 			exit(1); // quit!
 
 		//ADD BOUNDS TO CAMERA MOVEMENT E.G. MIN(MAX(0, CAMERA_XOFFSET), GRID_SIZE)
@@ -286,6 +306,14 @@ void keyboard(unsigned char key, int, int)
 				perspective_vv();
 			}
 			break;
+		// case ' ':
+		// 	if (pause) {
+		// 		glutIdleFunc(NULL);
+		// 	} 
+		// 	else {
+		// 		//need to save time ellapsed etc. and update when resuming
+		// 		glutIdleFunc(idle);
+		// 	}
 	}
 
 	glutPostRedisplay(); // force a redraw
@@ -295,29 +323,29 @@ void keyboard(unsigned char key, int, int)
 void special(int key, int, int)
 {
 	// handle special keys
-	vector_t direction;
+	vector_t direction = { 0, 0 };
 	switch (key)
 	{
 		case GLUT_KEY_LEFT: 
-			direction = { -1, 0 };
-			game::change_direction(direction); 
+			direction.x = -1;
+			game.change_direction(direction); 
 			break;
 		case GLUT_KEY_RIGHT: 
-			direction = { 1, 0 };
-			game::change_direction(direction); 
+			direction.x = 1;
+			game.change_direction(direction); 
 			break;
 		case GLUT_KEY_UP: 
-			direction = { 0, 1 };
-			game::change_direction(direction); 
+			direction.y = 1;
+			game.change_direction(direction); 
 			break;
 		case GLUT_KEY_DOWN: 
-			direction = { 0, -1 };
-			game::change_direction(direction); 
+			direction.y = -1;
+			game.change_direction(direction); 
 			break; 
 	}
 	//if (direction) game::change_direction(direction);
 
-	glutPostRedisplay(); // force a redraw
+	// glutPostRedisplay(); // force a redraw
 }
 
 int main(int argc, char* argv[])

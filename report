@@ -10,3 +10,6 @@ Used idle handler, to animate. with game loop to pass elapsed_time for processin
 Handle user input through a queue.
 
 Tried to keep my code more decoupled so that the game logic is separate from the animation / rendering logic. The rendering only polls the x and y positions of the snake and food.
+
+
+Used std::list as it is implemented as a doubly linked list, thus efficient access to head and tail.

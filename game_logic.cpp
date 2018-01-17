@@ -75,6 +75,7 @@ void Game::update(long time_elapsed) {
 				std::cout << "ATE" << std::endl;
 				food.eat();
 				snake->append();
+				// return;
 			}
 		}
 
@@ -136,7 +137,7 @@ vector_t Game::get_food() {
 bool Game::food_active() {
 
 	bool val = food.is_active(total_time);
-	std::cout << val << std::endl;
+	// std::cout << val << std::endl;
 	return val;
 }
 
@@ -144,8 +145,7 @@ bool Game::food_active() {
 
 Snake::Snake(): length(1) {
 	vector_t right = {1, 0};
-	head = new SnakeNode(0, 0);
-	head->set_direction(right);
+	SnakeNode head (0, 0, right);
 	head->set_next(NULL);
 	head->set_prev(NULL);
 	tail = head;
@@ -153,23 +153,32 @@ Snake::Snake(): length(1) {
 
 Snake::Snake(int x, int y) : length(1) {
 	vector_t right = {1, 0};
-	head = new SnakeNode(x, y);
-	head->set_direction(right);
+	head = new SnakeNode(x, y, right);
 	head->set_next(NULL);
 	head->set_prev(NULL);
 	tail = head;
 }
 
 Snake::~Snake() {
-	delete head; //will cascade, since SnakeNode will call delete on prev and next SnakeNodes
+	SnakeNode * snode = head;
+	SnakeNode * tmp;
+	while (snode != NULL) {
+		tmp = snode->get_next();
+		delete snode;
+		snode = tmp;
+	}
+
+	// delete head; //will cascade, since SnakeNode will call delete on prev and next SnakeNodes
 }
 
 void Snake::update() {
 	//iterate through, update xpos, ypos based on directions etc
 
-	SnakeNode * snode = head;
+	SnakeNode * snode = tail;
 	for (int i = 0; i < length; i++) {
 		//update x and y by the direction vector 
+		std::cout << i << ": this=" << this << ", prev=" << snode->get_prev() << ", next=" << snode->get_next() << std::endl; 
+
 		snode->update();
 
 		if (snode == head)
@@ -187,18 +196,37 @@ void Snake::append() {
 	//UPDATE AND THEN APPEND, BUT SAVE TAIL VALS BEFORE CHANGING ITS DIRECTION. TAIL_DIRECTION VAR. THEN CAN CALC PROPER X AND Y VALS FOR NEW NODE
 
 	//get tail values
-	float x = tail->get_x();
-	float y = tail->get_y();
+	float x = tail->get_x() - 1;
+	float y = tail->get_y() - 1;
 	vector_t direction = tail->get_direction();
+	std::cout << "ASD" << x << std::endl;
 
 	//add to end	
-	SnakeNode * node = new SnakeNode(x, y, direction);
-	node->set_prev(tail);
-	node->set_next(NULL);
-	tail->set_next(node);
+	SnakeNode node (x, y, direction);
+	std::cout << "ASD" << x << std::endl;
+	node.set_prev(tail);
+	node.set_next(NULL);
+	tail->set_next(&node);
 
-	tail = node;
+
+	tail = &node;
 	length++;
+
+	SnakeNode * snode = head;
+	std::cout << "head: (" << snode->get_x() << "," << snode->get_y() <<")"<<std::endl;
+	snode = head->get_next();
+	std::cout << "head+1: (" << snode->get_x() << "," << snode->get_y() <<")"<<std::endl;
+
+	snode = tail;
+	std::cout << "tail: (" << tail->get_x() << "," << tail->get_y() <<")"<<std::endl;
+	snode = tail->get_prev();
+	std::cout << "tail-1: (" << snode->get_x() << "," << snode->get_y() <<")"<<std::endl;
+
+
+}
+
+void Snake::enqueue_direction(vector_t & direction) {
+	return;
 }
 
 //SnakeNode func implementations
@@ -212,17 +240,23 @@ SnakeNode::SnakeNode(int x, int y) : x(x), y(y) {
 
 SnakeNode::~SnakeNode() {
 	//if (next) delete next;
-	delete next;
-	delete prev;
+	std::cout << "next=" << next << "prev" << prev << std::endl;
+	if (next) {
+		// delete next;
+	}
+	if (prev) { 
+		// delete prev;
+	}
 }
 
-void SnakeNode::set_direction(vector_t & direction_vector) {
+void SnakeNode::set_direction(vector_t direction_vector) {
 	//error check
 
 	// if queue.peek == vector 
 		// return;
 
 	if (std::abs(direction_vector.x) + std::abs(direction_vector.y) != 1) {
+		std::cout << "(" << direction_vector.x << ", " << direction_vector.y <<  ")" << std::endl; 
 		throw std::invalid_argument("direction vector must be of length 1 and corresponding to one of the cardinal directions");
 	}
 	direction = direction_vector;

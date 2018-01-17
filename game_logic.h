@@ -12,7 +12,8 @@ class Food;
 struct vector_t {
 	int x;
 	int y;
-	
+
+	//overload operators for use in std::set	
 	bool operator==(const vector_t & other) const {
 		return other.x == x && other.y == y;
 	}
@@ -68,19 +69,17 @@ class Game {
 
 class Snake {
 	private:
-		SnakeNode * head;
-		SnakeNode * tail;
-		size_t length;
+		std::list<SnakeNode> snake_nodes;
 	public:
 		Snake();
 		Snake(int x, int y); 
 		~Snake();
-		SnakeNode * get_head() const { return head; }
-		SnakeNode * get_tail() const { return tail; }
+		// SnakeNode * get_head() const { return head; }
+		// SnakeNode * get_tail() const { return tail; }
 		size_t get_length() const { return length; } 
 		void update();
 		void append();
-		void enqueue_direction(vector_t);
+		void enqueue_direction(vector_t & direction);
 };
 
 
@@ -96,7 +95,7 @@ class SnakeNode {
 	public:
 		SnakeNode() {};
 		SnakeNode(int x, int y);  
-		SnakeNode(int x, int y, vector_t directionVector): x(x), y(y), direction(direction) {} 
+		SnakeNode(int x, int y, const vector_t directionVector): x(x), y(y), direction(direction) {} 
 		~SnakeNode();
 		int get_x() const { return x; }
 		int get_y() const { return y; }
@@ -105,7 +104,7 @@ class SnakeNode {
 		SnakeNode * get_next() const { return next; }
 		void set_next(SnakeNode * next) { this->next = next; }
 		void set_prev(SnakeNode * prev) { this->prev = prev; }
-		void set_direction(vector_t&);
+		void set_direction(vector_t);
 		void update();
 };
 

@@ -92,7 +92,25 @@ void display()
 
 	set_material(snake_mat);
 	//draw snake blocks
+	
+	std::set<vector_t> snake_blocks = game.get_snake_coords();
+	std::set<vector_t>::iterator it;
+	for (it = snake_blocks.begin(); it != snake_blocks.end(); ++it) {
+		vector_t block = *it;
+
+		glPushMatrix();
+		// draw the x,y game coordinates in the xz plane using translation
+		// std::cout << "cube " << i << std::endl;
+
+		glTranslatef(block.x, 0.0f, block.y);;
+		glutSolidCube(1);
+		glPopMatrix();
+
+	}
+/*
 	Snake * snake = game.get_snake();
+
+
 	SnakeNode * node = snake->get_head();
 	
 	// std::cout << "snake length = "<< snake->get_length() << std::endl;
@@ -101,12 +119,16 @@ void display()
 		glPushMatrix();
 		// draw the x,y game coordinates in the xz plane using translation
 		// std::cout << "cube " << i << std::endl;
+
 		glTranslatef(node->get_x(), 0.0f, node->get_y());
 		glutSolidCube(1);
 		glPopMatrix();
 
 		node = node->get_next();
+
 	}
+
+*/
 
 	if (game.food_active()) {
 		set_material(food_mat);
@@ -261,8 +283,7 @@ void idle()
 
 	float secs = (int) (total_time / 100.0f) / 10.0f;
 	// std::cout << secs << "s passed" << std::endl;
-	
-	game.update(time_elapsed); 
+		game.update(time_elapsed); 
 
 	//FPS LINKED TO VELOCITY?!?!?
 	//while (RUNNINT_TIME <= BOUNDARY)

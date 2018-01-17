@@ -2,6 +2,7 @@
 #define GAME_LOGIC_H
 
 #include <ctime>
+#include <set>
 
 //forward declared dependencies
 class Snake;
@@ -11,24 +12,57 @@ class Food;
 struct vector_t {
 	int x;
 	int y;
+	
+	bool operator==(const vector_t & other) const {
+		return other.x == x && other.y == y;
+	}
+
+	bool operator<(const vector_t & other) const {
+		if (x < other.x) {
+			return true;
+		} else if (x > other.x) {
+			return false;
+		}
+		else {
+			return y < other.y;
+		}
+	}
+};
+
+class Food {
+	private:
+		int x, y;
+		long time_expires;
+		bool eaten;
+
+	public:
+		Food() {}; 
+		int get_x() const { return x; }
+		int get_y() const { return y; }
+		long set(int x, int y, long curr_time);
+		bool is_active(long curr_time);
+		void eat();
 };
 
 class Game {
 	private:
 		Snake * snake;
-		Food * food;
-		long start_time, ongoing_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
+		Food food;
+		long total_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
 		float velocity;
 		int grid_size, score;
+		bool contains(std::set<vector_t> vectors, vector_t to_find);
 	public:
 		Game(int grid_size);
 		~Game();
 		int get_score() const { return score; }
 		Snake * get_snake() const { return snake; } 
-		Food * get_food() const { return food; }
+		vector_t get_food();
+		bool food_active();
 		void update(long time_elapsed);
 		void change_direction(vector_t);
-		void start(long);
+		std::set<vector_t> get_snake_coords(bool include_head=true);
+		void start(); //REMOVE
 };
 
 
@@ -75,19 +109,5 @@ class SnakeNode {
 		void update();
 };
 
-
-class Food {
-	private:
-		int x, y, radius;
-	public:
-		Food() {} 
-		int get_x() const { return x; }
-		int get_y() const { return y; }
-		int get_radius() const { return radius; }
-		void set_x(int x);
-		void set_y(int y);
-		void set_radius(int);
-		int set(int, int, int);
-};
 
 #endif

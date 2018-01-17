@@ -1,6 +1,7 @@
 #include <cmath>
 #include <stddef.h>
 #include <iostream>
+#include <cstdlib>
 
 #include <unistd.h>
 
@@ -15,27 +16,26 @@
 //Game func implementations
 
 Game::Game(int grid_size) : grid_size(grid_size), score(0) {
-	velocity = 2.0f;
+	velocity = 5.0f; // blocks / sec
 	//time for a snake node to move one block at this velocity
-	// block distance / velocity (in clocks per sec))
-	// block_time = 1 / (2.0f / CLOCKS_PER_SEC); //NEEDS FIXING
-	block_time = CLOCKS_PER_SEC; //NEEDS FIXING
+	block_time = 1 / velocity * 1000; //convert to miliseconds 
 	int midpoint = static_cast<int>(grid_size / 2.0f);
 	snake = new Snake(midpoint, midpoint); //put snake in the middle of the grid initially
 }
 
 Game::~Game() {
 	delete snake;
-	delete food;
 }
 
-void Game::start(long time) {
-	start_time = time;
+void Game::start() {
+	total_time = 0;
 	block_ongoing_time = 0;
 	food_ongoing_time = 0;
+	food_time = 1000;
 }
 
 void Game::update(long time_elapsed) {
+	total_time += time_elapsed;
 	block_ongoing_time += time_elapsed;
 	food_ongoing_time += time_elapsed;
 
@@ -46,69 +46,79 @@ void Game::update(long time_elapsed) {
 		block_ongoing_time -= block_time;
 
 		snake->update(); //move by 1 square
-		// usleep(100000);
 		
-		// int counter = 0;
-		// clock_t start = clock();
+		//get new snake coords
+		std::set<vector_t> snake_coords = get_snake_coords();
 
-		// time_t timer1, timer2;
-		// time(&timer1);
-		// time(&timer2);
-		// std::cout << ctime(&timer1) << std::endl;
-		// // usleep(5000000);
-		// // time(&timer2);
-		// double diff = 0;
-		// while (diff < 5) {
-		// 	// t = clock() - t;
-		// 	diff = difftime(timer2, timer1);
-		// 	// std::cout << diff << "DIFF" << std::endl;
-		// 	// std::cout << ctime(&timer2) << std::endl;
-		// 	time(&timer2);
-
-		// 	int j = 10;
-		// 	for (int i = 0; i < 3; i++) {
-		// 		j *= std::pow(j,i);
-		// 	}
-		// 	// usleep(1000000);
-		// 	// usleep(1000000);
-		// 	// std::cout << ++counter << std::endl;
-
-		// }
-
-		// clock_t end = clock();
-		
-		// std::cout << float(end - start) / CLOCKS_PER_SEC << "SSS" <<diff << std::endl; 
-
-
-		// vector_t direction = snake->get_head()->get_direction();
-		// std::cout << "block_time " << block_time << std::endl;   
-		// std::cout << "time elapsed  " << time_elapsed << std::endl;   
-
-		// std::cout << direction.x << "," << direction.y << std::endl;   
-/*		if (!snake.isAlive()) {
-
-		} else {
-			//snake hasn't collided with itself. check walls
-			//bounds checks
+		//collision check
+		bool died = false;
+		vector_t head = { snake->get_head()->get_x(), snake->get_head()->get_y() };
+		//check collision
+		if (contains(get_snake_coords(false), head)) {
+			//death logic
+			died = true;
+		} else if (head.x < 0 || head.x >= grid_size || head.y < 0 || head.y >= grid_size) {
+			died = true;
 		}
 
-		check_alive();
-		check_food();*/
-	} 
+		if (died) {
+			std::cout << "dead" << std::endl;
+			//stop animation.
+			//reset vals.
+			//display text overlay. play again / quit.
+			// pass death back to display? to change key handlers? or just is_alive func
+		}
 
-	//timer for food spawn
-/*	if (food_ongoing_time >= food_time) {
-		//schedule food
-		//set food time randomly
-		food.spawn(x,y,radius,time_duration);
+		if (food.is_active(total_time)) {
+			vector_t food_pos = { food.get_x(), food.get_y() };
+			if (head == food_pos) {
+				std::cout << "ATE" << std::endl;
+				food.eat();
+				snake->append();
+			}
+		}
 
-		//ENCODE FOOD == ACTIVE. PERHAPS TIME PARAMETERS TO ENCODE.
+		//timer for food spawn
+		if (food_ongoing_time >= food_time) {
+			//schedule food
+			//set food time randomly
+			vector_t food_pos = {0, 0};
+			
+			do {
+				food_pos.x = rand() % grid_size;
+				food_pos.y = rand() % grid_size;
+			} while(contains(snake_coords, food_pos));
 
-		int rand_amount = (rand() % 5000) + 5000;  
-		food_time = food.get_time() + rand_amount;
-	}*/
 
-	//if snap to (== head arrived at dest square, then do direction change logic (iterate thru snake and set direction to next.direction))
+			long time_active = food.set(food_pos.x, food_pos.y, total_time);
+
+			//choose next when to respawn the food
+			int rand_amount = (rand() % 3000) + 2000;
+			// int rand_amount = (rand() % 5000) + 5000;
+			food_ongoing_time = 0;  
+			// food_time = 3000;
+			food_time = time_active + rand_amount;
+		}
+	}
+}	
+
+
+bool Game::contains(std::set<vector_t> vectors, vector_t to_find) {
+	std::set<vector_t>::iterator it = vectors.find(to_find);
+	return it != vectors.end();
+}
+
+ std::set<vector_t> Game::get_snake_coords(bool include_head) {
+ 	//return coordinates of snake as set of vector_t coordinates
+	std::set<vector_t> coords; //initial capacity = snake length
+	SnakeNode * snode = snake->get_head();
+	size_t length = snake->get_length();
+	for (int i = include_head ? 0 : 1; i < length; i++) {
+		vector_t coord = {snode->get_x(), snode->get_y()};
+		coords.insert(coord);
+		snode = snode->get_next();
+	}
+	return coords;
 }
 
 // "SCHEDULE TURN" / ENQUEUE>?!
@@ -117,6 +127,18 @@ void Game::change_direction(vector_t direction) {
 	snake->get_head()->set_direction(direction);
 }
 
+vector_t Game::get_food() {
+	vector_t food_pos = { food.get_x(), food.get_y() };
+			// std::cout << food_pos.x << "," << food_pos.y << std::endl;
+	return food_pos;
+}
+
+bool Game::food_active() {
+
+	bool val = food.is_active(total_time);
+	std::cout << val << std::endl;
+	return val;
+}
 
 //Snake func implementations
 
@@ -206,37 +228,30 @@ void SnakeNode::set_direction(vector_t & direction_vector) {
 	direction = direction_vector;
 }
 
-// void SnakeNode::set_next(SnakeNode * next) { 
-// 	this->next = next; 
-// }
-
-// void SnakeNode::set_prev(SnakeNode * prev) { 
-// 	this->prev = prev; 
-// }
-
 void SnakeNode::update() {
 	x += direction.x;
 	y += direction.y;
 }
 
 // Food func implementations
-void Food::set_x(int x) {
-	this->x = x;
-}
+long Food::set(int x, int y, long curr_time) {
+	eaten = false; //restore active status
 
-void Food::set_y(int y) {
-	this->y = y;
-}
-
-void Food::set_radius(int radius) {
-	this->radius = radius;
-}
-
-int Food::set(int x, int y, int radius) {
 	this->x = x;
 	this->y = y;
-	this->radius = radius;
+	
+	//time active: from 4-7 seconds
+	// long time_active = (rand() % 3000) + 1000; 
+	long time_active = (rand() % 3000) + 4000; 
+	time_expires = curr_time + time_active;
 
-	// return 5 + std::math
-	return 0;
+	return time_active;
+}
+
+bool Food::is_active(long time) {
+	return time < time_expires && !eaten;
+}
+
+void Food::eat() {
+	eaten = true;
 }

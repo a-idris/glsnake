@@ -23,7 +23,7 @@ Game game (GRID_SIZE);
 unsigned int g_grid = 0; 
 
 //only render if window is visible
-bool render = true;
+bool render = true, paused = false;
 
 //camera controls
 float camera_xoffset = midW;
@@ -31,7 +31,7 @@ float camera_zoffset = 0.0f; // change initial value = 0 + CONST
 float camera_delta = 0.5f;
 
 //time vars
-long start_time, total_time, timeElapsed;
+long start_time, total_time, last_time;
 
 //initial viewing perspective 
 perspective_t current_perspective = PERSPECTIVE;
@@ -90,20 +90,17 @@ void display()
 
 	glTranslatef(0.5f, 0.5f, 0.5f); // translate cube so its near left corner is at 0,0,0 
 
-	// glutSolidCube(1);
-	set_material(food_mat);
-	glutSolidSphere(0.5, 32, 32);
 	set_material(snake_mat);
 	//draw snake blocks
 	Snake * snake = game.get_snake();
 	SnakeNode * node = snake->get_head();
 	
-	std::cout << "snake length = "<< snake->get_length() << std::endl;
+	// std::cout << "snake length = "<< snake->get_length() << std::endl;
 
 	for (int i = 0; i < snake->get_length(); i++) {
 		glPushMatrix();
 		// draw the x,y game coordinates in the xz plane using translation
-		std::cout << "cube " << i << std::endl;
+		// std::cout << "cube " << i << std::endl;
 		glTranslatef(node->get_x(), 0.0f, node->get_y());
 		glutSolidCube(1);
 		glPopMatrix();
@@ -111,18 +108,26 @@ void display()
 		node = node->get_next();
 	}
 
+	if (game.food_active()) {
+		set_material(food_mat);
+		glPushMatrix();
+		vector_t food_pos = game.get_food();
+		glTranslatef(food_pos.x, 0.0f, food_pos.y);
+		glutSolidSphere(0.5, 32, 32);
+		glPopMatrix();
+	}
+
 	glPopMatrix();
 
 	//for each snake block, animate (translate by x,y)
 	//animate food, if applicable
-	//if (food.up)
-	//	food.x, food.y 
+
+
+
+	//score and time
 
 	glutSwapBuffers(); 
 
-	//score and time
-	float time = static_cast<int>(total_time / CLOCKS_PER_SEC * 10) / 10.0f; //convert total time to seconds w/ 1 d.p.precision !!!CLOCK / CLOCKS_PER_SEC YIELDS SECS 
-	// std::cout << time << std::endl;
 }
 
 
@@ -176,21 +181,14 @@ void set_material(const material_t& mat) {
 	glMaterialf(GL_FRONT, GL_SHININESS, mat.shininess);
 }
 
-timespec timeInMillis() {
+
+long get_time() {
 	timespec tp;
 	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-	std::cout << ctime(&(tp.tv_sec)) << std::endl;
-	return tp;
-}
-
-long toMillis(const timespec& tp) {
+	// std::cout << ctime(&(tp.tv_sec)) << std::endl;
 	long milis = tp.tv_sec * 1000;
 	milis += static_cast<long>(tp.tv_nsec / 1000000.0f);
 	return milis; 
-}
-
-long time_diff(timespec larger, timespec smaller) {
-
 }
 
 void init()
@@ -208,12 +206,12 @@ void init()
 	glShadeModel(GL_FLAT);
 
 	//start time
-	start_time = toMillis(timeInMillis());
+	start_time = get_time();
 	total_time = start_time;
-	timeElapsed = start_time;
+	last_time = start_time;
 
 	//start the game
-	game.start(timeElapsed);
+	game.start();
 }
 
 void orthographic_vv() {
@@ -252,15 +250,19 @@ void init_lights() {
 // our idle handler
 void idle()
 {
-	long milis = toMillis(timeInMillis());
-	timeElapsed = milis - timeElapsed; //get time elapsed since last call
-	total_time = milis - start_time; //get total gameplay time to display on screen
+	long timeMs = get_time();
+	long time_elapsed = timeMs - last_time; //get time elapsed since last call
+	last_time = timeMs;
+
+	total_time = timeMs - start_time; //get total gameplay time to display on screen
+	
 	//change PROPORTIONALLY
 	//maybe encode fps bound. while (time_passed > bound) time_passed -= bound; update();
 
-	float secs = ((int)total_time / 100.0f) / 10.0f;
-	std::cout << secs << "s passed" << std::endl;
-	game.update(timeElapsed); 
+	float secs = (int) (total_time / 100.0f) / 10.0f;
+	// std::cout << secs << "s passed" << std::endl;
+	
+	game.update(time_elapsed); 
 
 	//FPS LINKED TO VELOCITY?!?!?
 	//while (RUNNINT_TIME <= BOUNDARY)
@@ -328,14 +330,19 @@ void keyboard(unsigned char key, int, int)
 				perspective_vv();
 			}
 			break;
-		// case ' ':
-		// 	if (pause) {
-		// 		glutIdleFunc(NULL);
-		// 	} 
-		// 	else {
-		// 		//need to save time ellapsed etc. and update when resuming
-		// 		glutIdleFunc(idle);
-		// 	}
+		case ' ':
+			if (!paused) {
+				glutIdleFunc(NULL);
+			} 
+			else {
+				//need to save time ellapsed etc. and update when resuming
+				long curr_time = get_time();
+				long gap = curr_time - last_time;
+				last_time = curr_time;
+				start_time += gap;
+				glutIdleFunc(idle);
+			}
+			paused = !paused;
 	}
 
 	glutPostRedisplay(); // force a redraw
@@ -344,6 +351,10 @@ void keyboard(unsigned char key, int, int)
 // any special key pressed like arrow keys
 void special(int key, int, int)
 {
+	//if the game is paused don't accept input to change direction
+	if (paused) {
+		return;
+	}
 	// handle special keys
 	vector_t direction = { 0, 0 };
 	switch (key)
@@ -365,18 +376,16 @@ void special(int key, int, int)
 			game.change_direction(direction); 
 			break; 
 	}
-	//if (direction) game::change_direction(direction);
-
-	// glutPostRedisplay(); // force a redraw
 }
 
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv); 
 	glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH); 
-	glutInitWindowSize(512, 512); 
+	glutInitWindowSize(1012, 1012); 
+	// glutInitWindowSize(512, 512); 
 	glutInitWindowPosition(50, 50); 
-	glutCreateWindow("Snake"); 
+	glutCreateWindow("Snek"); 
 	glutDisplayFunc(display); 
 
 	glutKeyboardFunc(keyboard); 

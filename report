@@ -1,3 +1,12 @@
 report
 
 needed to do discrete movement skips (from one grid square to next), since otherwise it would be very hard to time turning corners e.g. goign from one row to the next as you would have to be quite precise. if discrete then not so 
+
+changed from system independent clock_t to system dependedent, linux call clock_gettime() since there 
+are no time functions at the millisecond granularity for c++ before version 11. clock_t measured time by cpu cycles taken, so inaccurate - skewed when process is sleeping or blocked.
+
+Used idle handler, to animate. with game loop to pass elapsed_time for processing the game logic that advances the world elapsed_time ahead and then the program animates this new game state. Needed precise timing function. 
+
+Handle user input through a queue.
+
+Tried to keep my code more decoupled so that the game logic is separate from the animation / rendering logic. The rendering only polls the x and y positions of the snake and food.

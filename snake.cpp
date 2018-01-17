@@ -93,47 +93,26 @@ void display()
 	set_material(snake_mat);
 	//draw snake blocks
 	
-	std::set<vector_t> snake_blocks = game.get_snake_coords();
-	std::set<vector_t>::iterator it;
-	for (it = snake_blocks.begin(); it != snake_blocks.end(); ++it) {
-		vector_t block = *it;
+	std::vector<coord_t> snake_blocks = game.get_snake_coords();
+	std::vector<coord_t>::iterator it = snake_blocks.begin();
+	while (it != snake_blocks.end()) {
+		coord_t block = *it;
 
-		glPushMatrix();
 		// draw the x,y game coordinates in the xz plane using translation
 		// std::cout << "cube " << i << std::endl;
 
+		glPushMatrix();
 		glTranslatef(block.x, 0.0f, block.y);;
 		glutSolidCube(1);
 		glPopMatrix();
 
+		it++;
 	}
-/*
-	Snake * snake = game.get_snake();
-
-
-	SnakeNode * node = snake->get_head();
-	
-	// std::cout << "snake length = "<< snake->get_length() << std::endl;
-
-	for (int i = 0; i < snake->get_length(); i++) {
-		glPushMatrix();
-		// draw the x,y game coordinates in the xz plane using translation
-		// std::cout << "cube " << i << std::endl;
-
-		glTranslatef(node->get_x(), 0.0f, node->get_y());
-		glutSolidCube(1);
-		glPopMatrix();
-
-		node = node->get_next();
-
-	}
-
-*/
 
 	if (game.food_active()) {
 		set_material(food_mat);
 		glPushMatrix();
-		vector_t food_pos = game.get_food();
+		coord_t food_pos = game.get_food();
 		glTranslatef(food_pos.x, 0.0f, food_pos.y);
 		glutSolidSphere(0.5, 32, 32);
 		glPopMatrix();
@@ -141,12 +120,8 @@ void display()
 
 	glPopMatrix();
 
-	//for each snake block, animate (translate by x,y)
-	//animate food, if applicable
-
-
-
 	//score and time
+	float secs = (int) (total_time / 100.0f) / 10.0f;
 
 	glutSwapBuffers(); 
 
@@ -278,22 +253,11 @@ void idle()
 
 	total_time = timeMs - start_time; //get total gameplay time to display on screen
 	
-	//change PROPORTIONALLY
-	//maybe encode fps bound. while (time_passed > bound) time_passed -= bound; update();
-
-	float secs = (int) (total_time / 100.0f) / 10.0f;
-	// std::cout << secs << "s passed" << std::endl;
-		game.update(time_elapsed); 
-
-	//FPS LINKED TO VELOCITY?!?!?
-	//while (RUNNINT_TIME <= BOUNDARY)
-	// RUNNING_TIME += CLOCK_DIFF
+	game.update(time_elapsed); 
 
 	if (render) {
 		glutPostRedisplay();
-	} else {
-		//sleep(1); ? //sleep max fps bound time diff ^^^
-	}
+	} 
 }
 
 
@@ -377,7 +341,7 @@ void special(int key, int, int)
 		return;
 	}
 	// handle special keys
-	vector_t direction = { 0, 0 };
+	coord_t direction = { 0, 0 };
 	switch (key)
 	{
 		case GLUT_KEY_LEFT: 

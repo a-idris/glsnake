@@ -2,31 +2,30 @@
 #include <stddef.h>
 #include <iostream>
 #include <cstdlib>
+#include <algorithm>
 
 #include <unistd.h>
 
 #include "game_logic.h"
 
-//snake block
-//for head, direction = arrow direction (last changed)
-//for else, direction = prev direction of next block
-
-// time to traverse one block = distance / velocity. thus increment time, once passed, snap to. update INTEGER coordinates
-
 //Game func implementations
 
 Game::Game(int grid_size) : grid_size(grid_size), score(0) {
-	velocity = 5.0f; // blocks / sec
-	//time for a snake node to move one block at this velocity
-	block_time = 1 / velocity * 1000; //convert to miliseconds 
+	//difficulty d/D: increment/decrement velocity
+	// blocks / sec
+	velocity = 5.0f; 
+	//time for a snake node to traverse one block = distance / velocity (converted to milliseconds). 
+	block_time = 1 / velocity * 1000; 
+	//put snake in the middle of the grid initially
 	int midpoint = static_cast<int>(grid_size / 2.0f);
-	snake = new Snake(midpoint, midpoint); //put snake in the middle of the grid initially
+	snake = new Snake(midpoint, midpoint); 
 }
 
 Game::~Game() {
 	delete snake;
 }
 
+//reset
 void Game::start() {
 	total_time = 0;
 	block_ongoing_time = 0;
@@ -39,29 +38,21 @@ void Game::update(long time_elapsed) {
 	block_ongoing_time += time_elapsed;
 	food_ongoing_time += time_elapsed;
 
-	// if (true) {
 	if (block_ongoing_time >= block_time) {
-
 
 		block_ongoing_time -= block_time;
 
-		snake->update(); //move by 1 square
+		//move by 1 square
+		snake->update(); 
 		
 		//get new snake coords
-		std::set<vector_t> snake_coords = get_snake_coords();
+		std::vector<coord_t> snake_coords = snake->get_snake_coords();
+		coord_t head = snake->get_head().get_coords();
 
-		//collision check
-		bool died = false;
-		vector_t head = { snake->get_head()->get_x(), snake->get_head()->get_y() };
-		//check collision
-		if (contains(get_snake_coords(false), head)) {
+
+		//check snake collision w/ itself or if the head is of bounds. only need to check head because other blocks are old positions of head 
+		if (snake->has_collision() || out_of_bounds(head)) {
 			//death logic
-			died = true;
-		} else if (head.x < 0 || head.x >= grid_size || head.y < 0 || head.y >= grid_size) {
-			died = true;
-		}
-
-		if (died) {
 			std::cout << "dead" << std::endl;
 			//stop animation.
 			//reset vals.
@@ -70,26 +61,22 @@ void Game::update(long time_elapsed) {
 		}
 
 		if (food.is_active(total_time)) {
-			vector_t food_pos = { food.get_x(), food.get_y() };
+			coord_t food_pos = { food.get_x(), food.get_y() };
 			if (head == food_pos) {
 				std::cout << "ATE" << std::endl;
-				food.eat();
+				food.eat(); //add time parameter. use for proportional score to give
 				snake->append();
-				// return;
 			}
 		}
 
 		//timer for food spawn
 		if (food_ongoing_time >= food_time) {
-			//schedule food
-			//set food time randomly
-			vector_t food_pos = {0, 0};
-			
+			//generate random coordinates for the food that don't collide with the snake
+			coord_t food_pos = {0, 0};
 			do {
 				food_pos.x = rand() % grid_size;
 				food_pos.y = rand() % grid_size;
-			} while(contains(snake_coords, food_pos));
-
+			} while (snake->contains(food_pos));
 
 			long time_active = food.set(food_pos.x, food_pos.y, total_time);
 
@@ -97,41 +84,28 @@ void Game::update(long time_elapsed) {
 			int rand_amount = (rand() % 3000) + 2000;
 			// int rand_amount = (rand() % 5000) + 5000;
 			food_ongoing_time = 0;  
-			// food_time = 3000;
 			food_time = time_active + rand_amount;
+			// food_time = 3000;
 		}
 	}
 }	
 
-
-bool Game::contains(std::set<vector_t> vectors, vector_t to_find) {
-	std::set<vector_t>::iterator it = vectors.find(to_find);
-	return it != vectors.end();
-}
-
- std::set<vector_t> Game::get_snake_coords(bool include_head) {
- 	//return coordinates of snake as set of vector_t coordinates
-	std::set<vector_t> coords; //initial capacity = snake length
-	SnakeNode * snode = snake->get_head();
-	size_t length = snake->get_length();
-	for (int i = include_head ? 0 : 1; i < length; i++) {
-		vector_t coord = {snode->get_x(), snode->get_y()};
-		coords.insert(coord);
-		snode = snode->get_next();
-	}
-	return coords;
+bool Game::out_of_bounds(const coord_t & coord) {
+	return coord.x < 0 || coord.x >= grid_size || coord.y < 0 || coord.y >= grid_size;
 }
 
 // "SCHEDULE TURN" / ENQUEUE>?!
-void Game::change_direction(vector_t direction) {
+void Game::change_direction(coord_t direction) {
 	// snake->enqueue_direction(direction);
-	snake->get_head()->set_direction(direction);
+	snake->get_head().set_direction(direction);
 }
 
-vector_t Game::get_food() {
-	vector_t food_pos = { food.get_x(), food.get_y() };
-			// std::cout << food_pos.x << "," << food_pos.y << std::endl;
-	return food_pos;
+std::vector<coord_t> Game::get_snake_coords() {
+	return snake->get_snake_coords();
+}
+
+coord_t Game::get_food() {
+	return food.get_coords();
 }
 
 bool Game::food_active() {
@@ -143,113 +117,112 @@ bool Game::food_active() {
 
 //Snake func implementations
 
-Snake::Snake(): length(1) {
-	vector_t right = {1, 0};
+Snake::Snake() {
+	coord_t right = {1, 0};
 	SnakeNode head (0, 0, right);
-	head->set_next(NULL);
-	head->set_prev(NULL);
-	tail = head;
+	snake_nodes.push_back(head);	
 }
 
-Snake::Snake(int x, int y) : length(1) {
-	vector_t right = {1, 0};
-	head = new SnakeNode(x, y, right);
-	head->set_next(NULL);
-	head->set_prev(NULL);
-	tail = head;
+Snake::Snake(int x, int y) {
+	coord_t right = {1, 0};
+	SnakeNode head (x, y, right);
+	snake_nodes.push_back(head);
 }
 
-Snake::~Snake() {
-	SnakeNode * snode = head;
-	SnakeNode * tmp;
-	while (snode != NULL) {
-		tmp = snode->get_next();
-		delete snode;
-		snode = tmp;
-	}
-
-	// delete head; //will cascade, since SnakeNode will call delete on prev and next SnakeNodes
+SnakeNode Snake::get_head() {
+	return snake_nodes.front();
 }
 
 void Snake::update() {
 	//iterate through, update xpos, ypos based on directions etc
+	//save tail data, to set the new node if need to append.
+	last_tail = snake_nodes.back().clone();
 
-	SnakeNode * snode = tail;
-	for (int i = 0; i < length; i++) {
-		//update x and y by the direction vector 
-		std::cout << i << ": this=" << this << ", prev=" << snode->get_prev() << ", next=" << snode->get_next() << std::endl; 
+	//for head, direction = arrow direction (last changed)
+	//for else, direction = prev direction of next block
 
-		snode->update();
+	std::vector<SnakeNode>::iterator it = snake_nodes.begin();
 
-		if (snode == head)
-			continue;
-		//all the non head blocks get their new direction from the direction of the previous snake node
-		SnakeNode * prev = snode->get_prev();
-		vector_t direction = prev->get_direction();
-		snode->set_direction(direction);
-		snode = snode->get_next();
+	//head
+	SnakeNode head = *it;
+	head.update();
+	it++;
+
+	coord_t prev_direction = head.get_direction();
+	while (it != snake_nodes.end()) {
+		SnakeNode snode = *it;
+		snode.update();
+		coord_t curr_direction = snode.get_direction();
+		snode.set_direction(prev_direction);
+		prev_direction = curr_direction;
+		it++;
 	}
 }
 
 void Snake::append() {
-
-	//UPDATE AND THEN APPEND, BUT SAVE TAIL VALS BEFORE CHANGING ITS DIRECTION. TAIL_DIRECTION VAR. THEN CAN CALC PROPER X AND Y VALS FOR NEW NODE
-
-	//get tail values
-	float x = tail->get_x() - 1;
-	float y = tail->get_y() - 1;
-	vector_t direction = tail->get_direction();
-	std::cout << "ASD" << x << std::endl;
-
-	//add to end	
-	SnakeNode node (x, y, direction);
-	std::cout << "ASD" << x << std::endl;
-	node.set_prev(tail);
-	node.set_next(NULL);
-	tail->set_next(&node);
-
-
-	tail = &node;
-	length++;
-
-	SnakeNode * snode = head;
-	std::cout << "head: (" << snode->get_x() << "," << snode->get_y() <<")"<<std::endl;
-	snode = head->get_next();
-	std::cout << "head+1: (" << snode->get_x() << "," << snode->get_y() <<")"<<std::endl;
-
-	snode = tail;
-	std::cout << "tail: (" << tail->get_x() << "," << tail->get_y() <<")"<<std::endl;
-	snode = tail->get_prev();
-	std::cout << "tail-1: (" << snode->get_x() << "," << snode->get_y() <<")"<<std::endl;
-
-
+	snake_nodes.push_back(last_tail);
 }
 
-void Snake::enqueue_direction(vector_t & direction) {
+void Snake::enqueue_direction(const coord_t & direction) {
 	return;
+}
+
+//functor for collision ops
+struct collision {
+	private:
+		coord_t collidor; //MAY NEED TO PREINIT
+	public:
+		collision(const coord_t & collidor): collidor(collidor) {};
+		bool operator () (const SnakeNode & node) {
+			return node.collides(collidor);
+		}
+};
+
+bool Snake::has_collision() {
+	//has a collision if any of the non-head blocks collide with the head coordinates
+	coord_t head = get_head().get_coords();
+	//advance the beginning iterator by 1 to skip head node
+	std::vector<SnakeNode>::iterator begin_it = snake_nodes.begin();
+	begin_it++;  
+	std::vector<SnakeNode>::iterator it = std::find_if(begin_it, snake_nodes.end(), collision(head));
+	return it != snake_nodes.end();
+}
+
+bool Snake::contains(const coord_t & coords) {
+	//returns true if one of the nodes' coords match the parameter
+	std::vector<SnakeNode>::iterator it = std::find_if(snake_nodes.begin(), snake_nodes.end(), collision(coords));
+	return it != snake_nodes.end();
+}
+
+std::vector<coord_t> Snake::get_snake_coords() {
+	std::vector<coord_t> snake_coords;
+	snake_coords.reserve(snake_coords.size()); 
+	
+	std::vector<SnakeNode>::iterator it = snake_nodes.begin();
+	while (it != snake_nodes.end()) {
+		snake_coords.push_back(it->get_coords());
+		it++;
+	}
+	return snake_coords;
 }
 
 //SnakeNode func implementations
 
-
 SnakeNode::SnakeNode(int x, int y) : x(x), y(y) {
-	vector_t right = {1, 0};
+	coord_t right = {1, 0};
 	direction = right;
-	// no need to set next and prev, set in member initialisation list
 }
 
-SnakeNode::~SnakeNode() {
-	//if (next) delete next;
-	std::cout << "next=" << next << "prev" << prev << std::endl;
-	if (next) {
-		// delete next;
-	}
-	if (prev) { 
-		// delete prev;
-	}
+SnakeNode SnakeNode::clone() {
+	return SnakeNode(x, y, direction);
 }
 
-void SnakeNode::set_direction(vector_t direction_vector) {
+coord_t SnakeNode::get_coords() {
+	coord_t coords = {x, y};
+	return coords;
+}
+
+void SnakeNode::set_direction(const coord_t & direction_vector) {
 	//error check
 
 	// if queue.peek == vector 
@@ -267,7 +240,20 @@ void SnakeNode::update() {
 	y += direction.y;
 }
 
+bool SnakeNode::collides(const SnakeNode & other) const{
+	return x == other.x && y == other.y;
+}
+
+bool SnakeNode::collides(const coord_t & coord) const {
+	return x == coord.x && y == coord.y;
+}
+
 // Food func implementations
+coord_t Food::get_coords() {
+	coord_t coords = {x,y};
+	return coords;
+}
+
 long Food::set(int x, int y, long curr_time) {
 	eaten = false; //restore active status
 
@@ -283,7 +269,7 @@ long Food::set(int x, int y, long curr_time) {
 }
 
 bool Food::is_active(long time) {
-	return time < time_expires && !eaten;
+	return time <= time_expires && !eaten;
 }
 
 void Food::eat() {

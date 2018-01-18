@@ -51,7 +51,7 @@ class Game {
 		bool food_active();
 		coord_t get_food();
 		std::vector<coord_t> get_snake_coords();
-		void change_direction(coord_t);
+		void change_direction(coord_t &);
 };
 
 
@@ -64,13 +64,16 @@ class SnakeNode {
 	public:
 		SnakeNode() {};
 		SnakeNode(int x, int y);  
-		SnakeNode(int x, int y, const coord_t directionVector): x(x), y(y), direction(direction) {}
+		SnakeNode(int x, int y, coord_t & directionVector): x(x), y(y) {
+			direction.x = directionVector.x;
+			direction.y = directionVector.y;
+		}
 		SnakeNode clone(); 
 		int get_x() const { return x; }
 		int get_y() const { return y; }
 		coord_t get_coords();
 		coord_t get_direction() const { return direction; }
-		void set_direction(const coord_t &); //&
+		void set_direction(coord_t &); //&
 		void update();
 		bool collides(const SnakeNode &) const;
 		bool collides(const coord_t &) const;

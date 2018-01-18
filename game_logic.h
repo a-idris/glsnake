@@ -63,9 +63,8 @@ class SnakeNode {
 		//USE QUEUE OR DEQUE FOR DIRECTION. enqueu from change_direction, on update - dequeue?
 	public:
 		SnakeNode() {};
-		~SnakeNode();
 		SnakeNode(int x, int y);  
-		SnakeNode(int x, int y, coord_t direction_vector);
+		SnakeNode(int x, int y, coord_t direction_vector) : x(x), y(y), direction(direction_vector) {}
 		SnakeNode(const SnakeNode & copy);
 		SnakeNode clone(); 
 		int get_x() const { return x; }
@@ -85,6 +84,7 @@ class Snake {
 	public:
 		Snake();
 		Snake(int x, int y);
+		~Snake();
 		SnakeNode * get_head();
 		void update();
 		void append();

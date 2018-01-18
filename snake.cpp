@@ -278,7 +278,6 @@ void visibility(int vis)
 
 void reshape(int w, int h) {
 	glViewport(0, 0, w, h);
-	std::cerr << "reshape" << std::endl;
 	if (current_perspective == ORTHOGRAPHIC) {
 		orthographic_vv();
 	} else {

@@ -13,7 +13,7 @@
 Game::Game(int grid_size) : grid_size(grid_size), score(0) {
 	//difficulty d/D: increment/decrement velocity
 	// blocks / sec
-	velocity = 5.0f; 
+	velocity = 10.0f; 
 	//time for a snake node to traverse one block = distance / velocity (converted to milliseconds). 
 	block_time = 1 / velocity * 1000; 
 	//put snake in the middle of the grid initially
@@ -48,7 +48,7 @@ void Game::update(long time_elapsed) {
 		//get new snake coords
 		std::vector<coord_t> snake_coords = snake->get_snake_coords();
 		coord_t head = snake->get_head()->get_coords();
-		std::cout << "head direction" << snake->get_head()->get_direction().x << ", " << snake->get_head()->get_direction().y << std::endl;
+		// std::cout << "head direction" << snake->get_head()->get_direction().x << ", " << snake->get_head()->get_direction().y << std::endl;
 
 		//check snake collision w/ itself or if the head is of bounds. only need to check head because other blocks are old positions of head 
 		if (snake->has_collision() || out_of_bounds(head)) {
@@ -118,55 +118,29 @@ bool Game::food_active() {
 //Snake func implementations
 
 Snake::Snake() {
-	std::cout << "INIT" << std::endl;
 	coord_t right = {1, 0};
-	SnakeNode head (0, 0, right);
-	snake_nodes.push_back(&head);	
+	SnakeNode * head = new SnakeNode(0, 0, right);
+	snake_nodes.push_back(head);	
 }
 
 Snake::Snake(int x, int y) {
-	std::cout << "INIT" <<x<<y << std::endl;
 	coord_t right = {1, 0};
-	SnakeNode head (x, y, right);
-	// head.set_direction(right);
-	snake_nodes.push_back(&head);
-
-
-/*	coord_t left = { -1, 0};
-	head.set_direction(left);
-
-	coord_t pos = head.get_coords();
-	coord_t dir = head.get_direction();
-	std::cout << "Snake::init pos = (" << pos.x << ", " << pos.y <<  ")" << std::endl; 
-	std::cout << "Snake::init dir = (" << dir.x << ", " << dir.y <<  ")" << std::endl; 
-	snake_nodes.push_back(&head);
-	SnakeNode * head_ptr = get_head();
-	head_ptr->set_direction(right);
-
-	std::cout << "RETRIEVED RIGHT [RIGHT]" << std::endl; 
-	pos = head_ptr->get_coords();
-	dir = head_ptr->get_direction();
-	std::cout << "Snake::init pos = (" << pos.x << ", " << pos.y <<  ")" << std::endl; 
-	std::cout << "Snake::init dir = (" << dir.x << ", " << dir.y <<  ")" << std::endl; 
-
-	head_ptr = get_head();
-
-	std::cout << "RETRIEVED LEFT [RIGHT]" << std::endl; 
-	pos = head_ptr->get_coords();
-	dir = head_ptr->get_direction();
-	std::cout << "Snake::init pos = (" << pos.x << ", " << pos.y <<  ")" << std::endl; 
-	std::cout << "Snake::init dir = (" << dir.x << ", " << dir.y <<  ")" << std::endl; */
-	
+	SnakeNode * head = new SnakeNode(x, y, right);
+	snake_nodes.push_back(head);	
 }
 
-//CHANGE TO SNAKENODE PTR
+Snake::~Snake() {
+	//iterate through vector, deleting each element
+	std::vector<SnakeNode *>::iterator it = snake_nodes.begin();
+	while (it != snake_nodes.end()) {
+		SnakeNode * ptr = *it; 
+		delete ptr;
+		it++;
+	}
+}
 
 SnakeNode * Snake::get_head() {
-	std::cout << "GET_HEAD START" <<std::endl;
-	SnakeNode * ptr = snake_nodes.front();
-	std::cout << "GET_HEAD END" <<std::endl;
-	return ptr; //dereference the pointer
-	// return snake_nodes.front(); //dereference the pointer
+	return snake_nodes.front();
 }
 
 void Snake::update() {
@@ -174,7 +148,7 @@ void Snake::update() {
 	//save tail data, to set the new node if need to append.
 
 
-	// last_tail = snake_nodes.back()->clone();
+	last_tail = snake_nodes.back()->clone();
 
 	//for head, direction = arrow direction (last changed)
 	//for else, direction = prev direction of next block
@@ -182,25 +156,16 @@ void Snake::update() {
 	std::vector<SnakeNode *>::iterator it = snake_nodes.begin();
 
 	//head
-	SnakeNode * head = get_head();
+	SnakeNode * head = *it;
 	coord_t pos = head->get_coords();
-	coord_t prev_direction = head->get_direction();
-	std::cout << "Snake::update head pos = (" << pos.x << ", " << pos.y <<  ")" << std::endl; 
-	std::cout << "Snake::update head dir = (" << prev_direction.x << ", " << prev_direction.y <<  ")" << std::endl; 
 	head->update();
 
-/*
-	coord_t dir = head.get_direction();
-	std::cout << "Snake::update dir = (" << dir.x << ", " << dir.y <<  ")" << std::endl; 
-	coord_t pos = head.get_coords();
-	std::cout << "Snake::init pos = (" << pos.x << ", " << pos.y <<  ")" << std::endl; 
-*/
 	it++;
-
+	coord_t prev_direction = head->get_direction();
 	while (it != snake_nodes.end()) {
 		SnakeNode * snode = *it;
 		coord_t curr_direction = snode->get_direction();
-		std::cout << "Snake::update curr_dir = (" << curr_direction.x << ", " << curr_direction.y <<  ")" << std::endl; 
+		// std::cout << "Snake::update curr_dir = (" << curr_direction.x << ", " << curr_direction.y <<  ")" << std::endl; 
 		snode->update();
 		snode->set_direction(prev_direction);
 		prev_direction = curr_direction;
@@ -211,10 +176,9 @@ void Snake::update() {
 }
 
 void Snake::append() {
-	std::cout << "APPENDING:" << std::endl;
-	SnakeNode node = last_tail.clone();
-	snake_nodes.push_back(&node);
-	std::cout << "APPENDING FINISH" << std::endl;
+	// SnakeNode node = last_tail.clone();
+	SnakeNode * node = new SnakeNode(last_tail);
+	snake_nodes.push_back(node);
 }
 
 void Snake::enqueue_direction(const coord_t & direction) {
@@ -250,22 +214,13 @@ bool Snake::contains(const coord_t & coords) {
 
 std::vector<coord_t> Snake::get_snake_coords() {
 	std::vector<coord_t> snake_coords;
-	// snake_coords.reserve(snake_coords.size()); 
+	snake_coords.reserve(snake_coords.size()); 
 	
-/*	for (int i = 0; i < snake_nodes.size(); i++) {
-		coord_t coords = snake_nodes[i]->get_coords();
-		snake_coords.push_back(coords);
-	}
-	return snake_coords;*/
 	std::vector<SnakeNode *>::iterator it = snake_nodes.begin();
 	int i = 0;
 	while (it != snake_nodes.end()) {
 		SnakeNode * node_ptr = *it;
-		coord_t coords = node_ptr->get_coords();
-		// snake_coords.push_back(node_ptr->get_coords());
-		snake_coords.push_back(coords);
-		// std::cout << "[" << i++ << " ] = (" << node_ptr->get_x() << ", " << node_ptr->get_y() <<  ")" << std::endl; 
-		std::cout << "[" << i++ << " ] = (" << coords.x << ", " << coords.y <<  ")" << std::endl; 
+		snake_coords.push_back(node_ptr->get_coords());
 		it++;
 	}
 	return snake_coords;
@@ -277,16 +232,6 @@ SnakeNode::SnakeNode(int x, int y) : x(x), y(y) {
 	coord_t right = {1, 0};
 	direction.x = right.x;
 	direction.y = right.y;
-}
-
-SnakeNode::~SnakeNode() {
-	std::cout << "DESTROYED" << std::endl;
-}
-
-SnakeNode::SnakeNode(int x, int y, coord_t direction_vector) : x(x), y(y), direction(direction_vector) {
-	std::cout << "coord set: (" << x << ", " << y << ")" << std::endl;
-	std::cout << "direction setting: (" << direction_vector.x << ", " << direction_vector.y << ")" << std::endl;
-	std::cout << "direction set: (" << direction.x << ", " << direction.y << ")" << std::endl;
 }
 
 SnakeNode::SnakeNode(const SnakeNode & copy) {
@@ -305,7 +250,6 @@ SnakeNode SnakeNode::clone() {
 
 coord_t SnakeNode::get_coords() {
 	coord_t coords = {x, y};
-	std::cout << "GET_COORDS " << x << ","<<y << " == " << coords.x << coords.y <<std::endl; 
 	return coords;
 }
 
@@ -317,7 +261,7 @@ void SnakeNode::set_direction(coord_t direction_vector) {
 
 	if (std::abs(direction_vector.x) + std::abs(direction_vector.y) != 1) {
 		std::cout << "(" << direction_vector.x << ", " << direction_vector.y <<  ")" << std::endl; 
-		// throw std::invalid_argument("direction vector must be of length 1 and corresponding to one of the cardinal directions");
+		throw std::invalid_argument("direction vector must be of length 1 and corresponding to one of the cardinal directions");
 	}
 
 	direction = direction_vector;

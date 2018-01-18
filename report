@@ -13,3 +13,8 @@ Tried to keep my code more decoupled so that the game logic is separate from the
 
 
 Used std::list as it is implemented as a doubly linked list, thus efficient access to head and tail.
+
+Used valgrind to check for memory leaks and found none related to my application.
+
+
+

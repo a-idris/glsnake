@@ -74,6 +74,13 @@ void display()
 		gluLookAt(camera_xoffset, GRID_SIZE, camera_zoffset,
 				  midW, 0, -midH,
 				  0, 1, 0);
+	} else {
+		SnakeNode head = game.get_head();
+		coord_t head_pos = head.get_coords();
+		coord_t heading_direction = head.get_direction();
+		gluLookAt(head_pos.x, 0.5, -head_pos.y,
+				  head_pos.x + heading_direction.x, 0.5, -(head_pos.y + heading_direction.y),
+				  0, 1, 0);
 	}
 	//if pov, camera pos = snake head, look direction = head + direction
 
@@ -93,14 +100,12 @@ void display()
 	set_material(snake_mat);
 	//draw snake blocks
 	
+
 	std::vector<coord_t> snake_blocks = game.get_snake_coords();
 	std::vector<coord_t>::iterator it = snake_blocks.begin();
 	while (it != snake_blocks.end()) {
 		coord_t block = *it;
-
 		// draw the x,y game coordinates in the xz plane using translation
-		// std::cout << "cube " << i << std::endl;
-
 		glPushMatrix();
 		glTranslatef(block.x, 0.0f, block.y);;
 		glutSolidCube(1);
@@ -206,9 +211,6 @@ void init()
 	start_time = get_time();
 	total_time = start_time;
 	last_time = start_time;
-
-	//start the game
-	game.start();
 }
 
 void orthographic_vv() {

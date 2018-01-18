@@ -16,6 +16,10 @@ Game::Game(int grid_size) : grid_size(grid_size), score(0) {
 	velocity = 10.0f; 
 	//time for a snake node to traverse one block = distance / velocity (converted to milliseconds). 
 	block_time = 1 / velocity * 1000; 
+	total_time = 0;
+	block_ongoing_time = 0;
+	food_ongoing_time = 0;
+	food_time = 1000;
 	//put snake in the middle of the grid initially
 	int midpoint = static_cast<int>(grid_size / 2.0f);
 	snake = new Snake(midpoint, midpoint); 
@@ -23,14 +27,6 @@ Game::Game(int grid_size) : grid_size(grid_size), score(0) {
 
 Game::~Game() {
 	delete snake;
-}
-
-//reset
-void Game::start() {
-	total_time = 0;
-	block_ongoing_time = 0;
-	food_ongoing_time = 0;
-	food_time = 1000;
 }
 
 void Game::update(long time_elapsed) {
@@ -94,8 +90,11 @@ bool Game::out_of_bounds(const coord_t & coord) {
 	return coord.x < 0 || coord.x >= grid_size || coord.y < 0 || coord.y >= grid_size;
 }
 
-// "SCHEDULE TURN" / ENQUEUE>?!
-void Game::change_direction(coord_t & direction) {
+SnakeNode Game::get_head() {
+	return *(snake->get_head());
+}
+
+void Game::change_direction(const coord_t & direction) {
 	// snake->enqueue_direction(direction);
 	snake->get_head()->set_direction(direction);
 }
@@ -253,9 +252,9 @@ coord_t SnakeNode::get_coords() {
 	return coords;
 }
 
-void SnakeNode::set_direction(coord_t direction_vector) {
+void SnakeNode::set_direction(const coord_t & direction_vector) {
 	//error check
-
+	
 	// if queue.peek == vector 
 		// return;
 

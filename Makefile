@@ -1,7 +1,7 @@
 LIBDIRS= -L/usr/X11R6/lib
 LDLIBS = -lglut -lGL -lGLU -lX11 -lm 
 
-CPPFLAGS= -O3 
+CPPFLAGS= -O3 -g
 LDFLAGS= $(CPPFLAGS) $(LIBDIRS)
 
 CXX = g++

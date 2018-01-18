@@ -63,17 +63,16 @@ class SnakeNode {
 		//USE QUEUE OR DEQUE FOR DIRECTION. enqueu from change_direction, on update - dequeue?
 	public:
 		SnakeNode() {};
+		~SnakeNode();
 		SnakeNode(int x, int y);  
-		SnakeNode(int x, int y, coord_t & directionVector): x(x), y(y) {
-			direction.x = directionVector.x;
-			direction.y = directionVector.y;
-		}
+		SnakeNode(int x, int y, coord_t direction_vector);
+		SnakeNode(const SnakeNode & copy);
 		SnakeNode clone(); 
 		int get_x() const { return x; }
 		int get_y() const { return y; }
 		coord_t get_coords();
 		coord_t get_direction() const { return direction; }
-		void set_direction(coord_t &); //&
+		void set_direction(coord_t); //&
 		void update();
 		bool collides(const SnakeNode &) const;
 		bool collides(const coord_t &) const;
@@ -81,12 +80,12 @@ class SnakeNode {
 
 class Snake {
 	private:
-		std::vector<SnakeNode> snake_nodes;
+		std::vector<SnakeNode *> snake_nodes;
 		SnakeNode last_tail;
 	public:
 		Snake();
 		Snake(int x, int y);
-		SnakeNode get_head();
+		SnakeNode * get_head();
 		void update();
 		void append();
 		bool has_collision();

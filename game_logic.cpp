@@ -13,7 +13,7 @@
 Game::Game(int grid_size) : grid_size(grid_size), score(0) {
 	//difficulty d/D: increment/decrement velocity
 	// blocks / sec
-	velocity = 10.0f; 
+	velocity = 4.0f; 
 	//time for a snake node to traverse one block = distance / velocity (converted to milliseconds). 
 	block_time = 1 / velocity * 1000; 
 	total_time = 0;
@@ -60,7 +60,8 @@ void Game::update(long time_elapsed) {
 			coord_t food_pos = { food.get_x(), food.get_y() };
 			if (head == food_pos) {
 				std::cout << "ATE" << std::endl;
-				food.eat(); //add time parameter. use for proportional score to give
+				int points = food.eat(); //add time parameter. use for proportional score to give
+				score += points;
 				snake->append();
 			}
 		}
@@ -95,8 +96,8 @@ SnakeNode Game::get_head() {
 }
 
 void Game::change_direction(const coord_t & direction) {
-	// snake->enqueue_direction(direction);
-	snake->get_head()->set_direction(direction);
+	snake->enqueue_direction(direction);
+	// snake->get_head()->set_direction(direction);
 }
 
 std::vector<coord_t> Game::get_snake_coords() {
@@ -147,7 +148,6 @@ void Snake::update() {
 	//save tail data, to set the new node if need to append.
 
 
-	last_tail = snake_nodes.back()->clone();
 
 	//for head, direction = arrow direction (last changed)
 	//for else, direction = prev direction of next block
@@ -156,7 +156,17 @@ void Snake::update() {
 
 	//head
 	SnakeNode * head = *it;
-	coord_t pos = head->get_coords();
+
+	//process input direction 
+	if (!directions.empty()) {
+		coord_t direction = directions.front();
+		directions.pop();
+		head->set_direction(direction);
+	}
+
+	//save tail details. in case need to append, will use these details. need to save after updating head direction in case head = tail
+	last_tail = snake_nodes.back()->clone();
+
 	head->update();
 
 	it++;
@@ -181,7 +191,13 @@ void Snake::append() {
 }
 
 void Snake::enqueue_direction(const coord_t & direction) {
-	return;
+	if (!directions.empty()) {
+		coord_t last_dir = directions.back();
+		//don't duplicate directions
+		if (last_dir == direction)
+			return;
+	}
+	directions.push(direction);
 }
 
 //functor for collision ops
@@ -254,7 +270,7 @@ coord_t SnakeNode::get_coords() {
 
 void SnakeNode::set_direction(const coord_t & direction_vector) {
 	//error check
-	
+
 	// if queue.peek == vector 
 		// return;
 
@@ -306,6 +322,7 @@ bool Food::is_active(long time) {
 	return time <= time_expires && !eaten;
 }
 
-void Food::eat() {
+int Food::eat() {
 	eaten = true;
+	return 5;
 }

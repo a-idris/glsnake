@@ -6,8 +6,9 @@
 
 #include <stddef.h>
 #include <iostream>
-#include <ctime>
 #include <time.h>
+#include <string>
+#include <sstream>
 
 #include "game_logic.h"
 #include "snake.h"
@@ -54,6 +55,8 @@ const material_t food_mat = {
 
 //decls
 void draw_border(int, int);
+void draw_hud();
+void draw_text(const float, const float, const std::string &);
 void init_lights();
 void orthographic_vv();
 void perspective_vv();
@@ -62,6 +65,9 @@ void set_material(const material_t &);
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); 
+
+	draw_hud();
+
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -125,9 +131,6 @@ void display()
 
 	glPopMatrix();
 
-	//score and time
-	float secs = (int) (total_time / 100.0f) / 10.0f;
-
 	glutSwapBuffers(); 
 
 }
@@ -181,6 +184,94 @@ void set_material(const material_t& mat) {
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat.diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat.specular);
 	glMaterialf(GL_FRONT, GL_SHININESS, mat.shininess);
+}
+
+void draw_hud() {
+	//get viewport dimensions
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	int width = viewport[2];
+	int height = viewport[3];
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+		glLoadIdentity();
+
+		gluOrtho2D(0, width, 0, height);
+
+		//position in top right
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+			glLoadIdentity();			
+
+			glDisable(GL_LIGHTING);
+			//enclosing box
+			// glColor3f(0.8f, 0.8f, 0.8f);
+			glColor3f(1.0f, 1.0f, 0.0f);
+
+			int box_width = static_cast<int>(width * 0.3f);
+			int box_height = static_cast<int>(height * 0.2f);
+
+			glTranslatef(width - box_width, height - box_height, 0);
+
+			glBegin(GL_LINE_LOOP);
+				glVertex3f(0.0f, 0.0f, 0.0f);
+				glVertex3f(box_width, 0.0f, 0.0f);
+				glVertex3f(box_width, box_height, 0.0f);
+				glVertex3f(0.0f, box_height, 0.0f);
+			glEnd();
+
+			//score and time
+
+
+			glPushMatrix();
+				glColor3f(1.0f, 0.0f, 0.0f);
+
+
+				float secs = (int) (total_time / 100.0f) / 10.0f;
+				std::ostringstream convert_t;
+				convert_t << secs;
+				std::string secs_str (convert_t.str()); 
+				std::string time = "time:" +secs_str + "s";
+				draw_text(10.0f, box_height * 0.8f, time);
+
+				std::ostringstream convert_s;
+				convert_s << game.get_score();
+				std::string score_str = convert_s.str(); 
+				std::string score = "score: " + score_str; 
+				draw_text(10.0f, box_height * 0.8f - 30.0f, score);
+
+				std::string instructions [] = { "arrow keys to move", "'wasd' for camera movement","'p' to cycle camera", "spacebar to pause"};
+				int num_instructions = 4;
+
+				for (int i = 0; i < num_instructions; i++) {
+					draw_text(10.0f, box_height * 0.8f - (60.0f + 30*i), instructions[i]);
+				}				
+
+			glPopMatrix();
+
+
+			glEnable(GL_LIGHTING);
+		glPopMatrix();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+}
+
+//adapted from lab5
+void draw_text(const float x, const float y, const std::string & text)
+{
+	const float scale = 0.25f;
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+		glTranslatef(x, y, 0.1f);
+		glScalef(scale, scale, 1.0f);
+		std::cout << text << std::endl;
+		for (size_t i = 0; i < text.length(); i++) {
+   			glutStrokeCharacter(GLUT_STROKE_ROMAN, text[i]);
+		}
+	glPopMatrix();
 }
 
 
@@ -346,18 +437,22 @@ void special(int key, int, int)
 	switch (key)
 	{
 		case GLUT_KEY_LEFT: 
+			std::cout << "LEFT" << std::endl;
 			direction.x = -1;
 			game.change_direction(direction); 
 			break;
 		case GLUT_KEY_RIGHT: 
+			std::cout << "RIGHT" << std::endl;
 			direction.x = 1;
 			game.change_direction(direction); 
 			break;
 		case GLUT_KEY_UP: 
+			std::cout << "UP" << std::endl;
 			direction.y = 1;
 			game.change_direction(direction); 
 			break;
 		case GLUT_KEY_DOWN: 
+			std::cout << "DOWN" << std::endl;
 			direction.y = -1;
 			game.change_direction(direction); 
 			break; 

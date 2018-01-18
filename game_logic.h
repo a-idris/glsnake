@@ -1,8 +1,8 @@
 #ifndef GAME_LOGIC_H
 #define GAME_LOGIC_H
 
-#include <ctime>
 #include <vector>
+#include <queue>
 
 //forward declared dependencies
 class Snake;
@@ -31,7 +31,7 @@ class Food {
 		coord_t get_coords();
 		long set(int x, int y, long curr_time);
 		bool is_active(long curr_time);
-		void eat();
+		int eat();
 };
 
 class Game {
@@ -79,6 +79,7 @@ class SnakeNode {
 class Snake {
 	private:
 		std::vector<SnakeNode *> snake_nodes;
+		std::queue<coord_t> directions;
 		SnakeNode last_tail;
 	public:
 		Snake();

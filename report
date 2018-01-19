@@ -18,12 +18,3 @@ Used valgrind to check for memory leaks and found none related to my application
 
 
 
-TODO:
---directions queueing
---HUD: time, score.
--- death
--- difficulty
-food proportional score
-pov
-materials, lighting, camera position
-rand

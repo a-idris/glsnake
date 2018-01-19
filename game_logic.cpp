@@ -11,15 +11,17 @@
 //Game func implementations
 
 Game::Game(int grid_size) : grid_size(grid_size), score(0), MIN_VELOCITY(1), MAX_VELOCITY(31) {
-	//difficulty d/D: increment/decrement velocity
 	// blocks / sec
 	velocity = 10; 
+	difficulty_delta = (MAX_VELOCITY - MIN_VELOCITY) / 10; //10 difficulty levels
 	//time for a snake node to traverse one block = distance / velocity (converted to milliseconds). 
 	block_time = static_cast<long>(1.0f / velocity * 1000); 
 	total_time = 0;
 	block_ongoing_time = 0;
 	food_ongoing_time = 0;
 	food_time = 1000;
+	//seed the rng
+	srand(time(NULL));
 	//put snake in the middle of the grid initially
 	int midpoint = static_cast<int>(grid_size / 2.0f);
 	snake = new Snake(midpoint, midpoint); 
@@ -67,7 +69,8 @@ bool Game::update(long time_elapsed) {
 		if (food.is_active(total_time)) {
 			coord_t food_pos = { food.get_x(), food.get_y() };
 			if (head == food_pos) {
-				int points = food.eat(); //add time parameter. use for proportional score to give
+				// points given proportional to the time taken to eat the food
+				int points = food.eat(total_time); 
 				score += points;
 				snake->append();
 			}
@@ -125,15 +128,19 @@ bool Game::food_active() {
 }
 
 int Game::increase_difficulty() {
-	velocity = std::min(velocity + 2, MAX_VELOCITY);
+	velocity = std::min(velocity + difficulty_delta, MAX_VELOCITY);
 	block_time = static_cast<long>(1.0f / velocity * 1000);
 	return velocity;
 }
 
 int Game::decrease_difficulty() {
-	velocity = std::max(velocity - 2, MIN_VELOCITY);
+	velocity = std::max(velocity - difficulty_delta, MIN_VELOCITY);
 	block_time = static_cast<long>(1.0f / velocity * 1000);
 	return velocity;
+}
+
+int Game::get_difficulty() {
+	return (velocity - MIN_VELOCITY) / difficulty_delta;
 }
 
 //Snake func implementations
@@ -180,7 +187,19 @@ void Snake::update() {
 	if (!directions.empty()) {
 		coord_t direction = directions.front();
 		directions.pop();
-		head->set_direction(direction);
+		coord_t curr_direction = head->get_direction();
+		//prevent head from turning inwards into its body
+		if (snake_nodes.size() > 2 && direction.x + curr_direction.x == 0 && direction.y + curr_direction.y == 0) {
+			//if the direction is in the opposite direction of current direction, skip it
+			//next direction guaranteed to be different by the enqueue_direction func
+			if (!directions.empty()) {
+				direction = directions.front();
+				directions.pop();
+				head->set_direction(direction);
+			}
+		} else {
+			head->set_direction(direction);
+		}
 	}
 
 	//save tail details. in case need to append, will use these details. need to save after updating head direction in case head = tail
@@ -331,7 +350,8 @@ long Food::set(int x, int y, long curr_time) {
 	
 	//time active: from 4-7 seconds
 	// long time_active = (rand() % 3000) + 1000; 
-	long time_active = (rand() % 3000) + 4000; 
+	long time_active = (rand() % 3000) + 4000;
+	time_set = curr_time; 
 	time_expires = curr_time + time_active;
 
 	return time_active;
@@ -341,7 +361,10 @@ bool Food::is_active(long time) {
 	return time <= time_expires && !eaten;
 }
 
-int Food::eat() {
+int Food::eat(long time) {
 	eaten = true;
-	return 5;
+	float proportion = float(time - time_set) / (time_expires - time_set);  
+	//range 5-25, the faster it's eaten the higher the score
+	float additional = 20 - static_cast<int>((proportion * 20) + 0.5);
+	return 5 + additional;
 }

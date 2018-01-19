@@ -32,7 +32,7 @@ bool render = true, paused = false, dead = false, instructions = false;
 
 //camera controls
 float camera_xoffset = midW;
-float camera_zoffset = 0.0f; // change initial value = 0 + CONST
+float camera_zoffset = -2.5f; // change initial value = 0 + CONST
 float camera_delta = 0.5f;
 
 //time vars
@@ -49,39 +49,18 @@ const material_t snake_mat = {
 	30.0f
 };
 
-// const material_t snake_mat = { 
-// 	{0.135f, 0.2225f, 0.1575f, 0.95f},
-// 	{0.54f, 0.89f, 0.63f, 0.95f},
-// 	{0.316228f, 0.316228f, 0.316228f, 0.95f},
-// 	12.8
-// };
-
-// const material_t snake_mat ={{ 0.0f,0.05f,0.0f,1.0f },
-// 	{ 0.4f,0.5f,0.4f,1.0f},
-// 	{0.04f,0.7f,0.04f,1.0f },
-// 	10.0f
-// };
-
 const material_t dead_snake_mat = {
-	{0.35f, 0.7f, 0.35f, 1.0f},
-	{0.5f, 0.95f, 0.5f, 1.0f}, 
-	{0.7f, 0.9f, 0.7f, 1.0f},
+	{0.85f, 1.0f, 0.85f, 1.0f},
+	{0.83f, 1.0f, 0.83f, 1.0f}, 
+	{1.0f, 1.0f, 1.0f, 1.0f},
 	30.0f
 };
 
-//food material 
-// const material_t food_mat = {
-// 	{0.3f, 0.2f, 0.2f, 1.0f},
-// 	{0.6f, 0.15f, 0.15f, 1.0f}, 
-// 	{0.8f, 0.6f, 0.6f, 1.0f},
-// 	50.0f
-// };
-
 const material_t food_mat = {
-	{ 0.24725f, 0.1995f, 0.0745f, 1.0f },
-	{0.75164f, 0.60648f, 0.22648f, 1.0f },
-	{0.628281f, 0.555802f, 0.366065f, 1.0f },
-	51.2f
+	{ 0.18f, 0.01f, 0.01f, 0.55f },
+	{0.61f, 0.04f, 0.04f, 0.55f },
+	{0.73f, 0.63f, 0.63f, 0.55f },
+	77.0f
 };
 
 //decls
@@ -261,6 +240,12 @@ void draw_hud() {
 				std::string score = "score: " + score_str; 
 				draw_text(20.0f, container1_height * 0.7f - 30.0f * text_scale, score);
 
+				//difficulty
+				std::ostringstream convert_d;
+				convert_d << game.get_difficulty();
+				std::string difficulty_str = convert_d.str(); 
+				std::string difficulty = "difficulty: " + difficulty_str; 
+				draw_text(20.0f, container1_height * 0.7f - 60.0f * text_scale, difficulty);
 
 				//draw instructions
 				int container2_width = static_cast<int>(width * 0.50f);
@@ -540,7 +525,7 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv); 
 	glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH); 
-	glutInitWindowSize(INIT_VIEWPORT_WIDTH, INIT_VIEWPORT_HEIGHT); 
+	glutInitWindowSize(INIT_VIEWPORT_WIDTH * 2, INIT_VIEWPORT_HEIGHT * 2); 
 	glutInitWindowPosition(50, 50); 
 	glutCreateWindow("Snek"); 
 

@@ -21,7 +21,7 @@ struct coord_t {
 class Food {
 	private:
 		int x, y;
-		long time_expires;
+		long time_set, time_expires;
 		bool eaten;
 
 	public:
@@ -31,7 +31,7 @@ class Food {
 		coord_t get_coords();
 		long set(int x, int y, long curr_time);
 		bool is_active(long curr_time);
-		int eat();
+		int eat(long curr_time);
 };
 
 class Game {
@@ -39,7 +39,7 @@ class Game {
 		Snake * snake;
 		Food food;
 		long total_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
-		int velocity, grid_size, score;
+		int velocity, grid_size, score, difficulty_delta;
 		const int MIN_VELOCITY, MAX_VELOCITY;
 		bool out_of_bounds(const coord_t &);
 	public:
@@ -53,6 +53,8 @@ class Game {
 		void change_direction(const coord_t &);
 		SnakeNode get_head();
 		void reset();
+		//return difficulty in range[0, 10]
+		int get_difficulty();
 		int increase_difficulty();
 		int decrease_difficulty();
 };

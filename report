@@ -17,4 +17,4 @@ Used std::list as it is implemented as a doubly linked list, thus efficient acce
 Used valgrind to check for memory leaks and found none related to my application.
 
 
-
+if you issue multiple change_direction commands naively in between game::update, only the last of these will be saved and acted upon. this is unacceptable behaviour, particularly for u turns often taken between rows in snake. with the queue method, each direction will be acted upon on consecutive calls of Snake::update()

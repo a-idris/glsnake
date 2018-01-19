@@ -56,6 +56,7 @@ const material_t dead_snake_mat = {
 	30.0f
 };
 
+//food material
 const material_t food_mat = {
 	{ 0.18f, 0.01f, 0.01f, 0.55f },
 	{0.61f, 0.04f, 0.04f, 0.55f },
@@ -63,14 +64,14 @@ const material_t food_mat = {
 	77.0f
 };
 
-//decls
+
 void draw_hud();
-void draw_death();
 void draw_text(const float, const float, const std::string &);
 void init_lights();
 void orthographic_vv();
 void perspective_vv();
 void set_material(const material_t &);
+
 
 void display()
 {
@@ -203,7 +204,6 @@ void draw_hud() {
 
 		gluOrtho2D(0, width, 0, height);
 
-		//position in top right
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 			glLoadIdentity();			
@@ -213,20 +213,13 @@ void draw_hud() {
 			int container1_width = static_cast<int>(width * 0.2f);
 			int container1_height = static_cast<int>(height * 0.15f);
 
+			//position first container in top left
 			glTranslatef(0, height - container1_height, 0);
-
-/*			glBegin(GL_LINE_LOOP);
-				glVertex3f(0.0f, 0.0f, 0.0f);
-				glVertex3f(container1_width, 0.0f, 0.0f);
-				glVertex3f(container1_width, container1_height, 0.0f);
-				glVertex3f(0.0f, container1_height, 0.0f);
-			glEnd();*/
 
 			glPushMatrix();
 				glColor3f(0.6f, 0.0f, 0.2f);
 
-				//score and time
-
+				//time
 				float secs = (int) (total_time / 100.0f) / 10.0f;
 				std::ostringstream convert_t;
 				convert_t << secs;
@@ -234,6 +227,7 @@ void draw_hud() {
 				std::string time = "time: " +secs_str + "s";
 				draw_text(20.0f, container1_height * 0.7f, time); 
 
+				//score
 				std::ostringstream convert_s;
 				convert_s << game.get_score();
 				std::string score_str = convert_s.str(); 
@@ -295,7 +289,7 @@ void draw_hud() {
 
 void draw_text(const float x, const float y, const std::string & text)
 {
-	float scale = 0.15f * text_scale; //scale by text_scale
+	float scale = 0.15f * text_scale; //scale by text_scale (dependent on viewport dimensions)
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -527,7 +521,7 @@ int main(int argc, char* argv[])
 	glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH); 
 	glutInitWindowSize(INIT_VIEWPORT_WIDTH * 2, INIT_VIEWPORT_HEIGHT * 2); 
 	glutInitWindowPosition(50, 50); 
-	glutCreateWindow("Snek"); 
+	glutCreateWindow("Snake"); 
 
 	glutDisplayFunc(display); 
 	glutKeyboardFunc(keyboard); 

@@ -10,12 +10,12 @@
 
 //Game func implementations
 
-Game::Game(int grid_size) : grid_size(grid_size), score(0) {
+Game::Game(int grid_size) : grid_size(grid_size), score(0), MIN_VELOCITY(1), MAX_VELOCITY(31) {
 	//difficulty d/D: increment/decrement velocity
 	// blocks / sec
-	velocity = 4.0f; 
+	velocity = 10; 
 	//time for a snake node to traverse one block = distance / velocity (converted to milliseconds). 
-	block_time = 1 / velocity * 1000; 
+	block_time = static_cast<long>(1.0f / velocity * 1000); 
 	total_time = 0;
 	block_ongoing_time = 0;
 	food_ongoing_time = 0;
@@ -29,7 +29,20 @@ Game::~Game() {
 	delete snake;
 }
 
-void Game::update(long time_elapsed) {
+void Game::reset() {
+	delete snake;
+
+	score = 0;
+	total_time = 0;
+	block_ongoing_time = 0;
+	food_ongoing_time = 0;
+	food_time = 0;
+	// food.eat(); 	
+	int midpoint = static_cast<int>(grid_size / 2.0f);
+	snake = new Snake(midpoint, midpoint); 
+}
+
+bool Game::update(long time_elapsed) {
 	total_time += time_elapsed;
 	block_ongoing_time += time_elapsed;
 	food_ongoing_time += time_elapsed;
@@ -48,18 +61,12 @@ void Game::update(long time_elapsed) {
 
 		//check snake collision w/ itself or if the head is of bounds. only need to check head because other blocks are old positions of head 
 		if (snake->has_collision() || out_of_bounds(head)) {
-			//death logic
-			std::cout << "dead" << std::endl;
-			//stop animation.
-			//reset vals.
-			//display text overlay. play again / quit.
-			// pass death back to display? to change key handlers? or just is_alive func
+			return false;
 		}
 
 		if (food.is_active(total_time)) {
 			coord_t food_pos = { food.get_x(), food.get_y() };
 			if (head == food_pos) {
-				std::cout << "ATE" << std::endl;
 				int points = food.eat(); //add time parameter. use for proportional score to give
 				score += points;
 				snake->append();
@@ -85,6 +92,8 @@ void Game::update(long time_elapsed) {
 			// food_time = 3000;
 		}
 	}
+
+	return true;
 }	
 
 bool Game::out_of_bounds(const coord_t & coord) {
@@ -113,6 +122,18 @@ bool Game::food_active() {
 	bool val = food.is_active(total_time);
 	// std::cout << val << std::endl;
 	return val;
+}
+
+int Game::increase_difficulty() {
+	velocity = std::min(velocity + 2, MAX_VELOCITY);
+	block_time = static_cast<long>(1.0f / velocity * 1000);
+	return velocity;
+}
+
+int Game::decrease_difficulty() {
+	velocity = std::max(velocity - 2, MIN_VELOCITY);
+	block_time = static_cast<long>(1.0f / velocity * 1000);
+	return velocity;
 }
 
 //Snake func implementations
@@ -146,8 +167,6 @@ SnakeNode * Snake::get_head() {
 void Snake::update() {
 	//iterate through, update xpos, ypos based on directions etc
 	//save tail data, to set the new node if need to append.
-
-
 
 	//for head, direction = arrow direction (last changed)
 	//for else, direction = prev direction of next block

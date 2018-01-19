@@ -39,19 +39,22 @@ class Game {
 		Snake * snake;
 		Food food;
 		long total_time, block_time, block_ongoing_time, food_time, food_ongoing_time;
-		float velocity;
-		int grid_size, score;
+		int velocity, grid_size, score;
+		const int MIN_VELOCITY, MAX_VELOCITY;
 		bool out_of_bounds(const coord_t &);
 	public:
 		Game(int grid_size);
 		~Game();
-		void update(long time_elapsed);
+		bool update(long time_elapsed); //update game world by time_elapsed and return alive state
 		int get_score() const { return score; }
 		bool food_active();
 		coord_t get_food();
 		std::vector<coord_t> get_snake_coords();
 		void change_direction(const coord_t &);
 		SnakeNode get_head();
+		void reset();
+		int increase_difficulty();
+		int decrease_difficulty();
 };
 
 

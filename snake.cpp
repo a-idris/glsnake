@@ -16,6 +16,10 @@
 
 const int GRID_SIZE = 20; //default grid size
 const float midW = GRID_SIZE / 2.0f, midH = GRID_SIZE / 2.0f;
+const float INIT_VIEWPORT_WIDTH = 512.0f;
+const float INIT_VIEWPORT_HEIGHT = 652.0f;
+
+float text_scale = 1.0f; //scale factor for drawing text 
 
 //initialise game
 Game game (GRID_SIZE);
@@ -24,7 +28,7 @@ Game game (GRID_SIZE);
 unsigned int g_grid = 0; 
 
 //only render if window is visible
-bool render = true, paused = false, dead = false;
+bool render = true, paused = false, dead = false, instructions = false;
 
 //camera controls
 float camera_xoffset = midW;
@@ -102,7 +106,7 @@ void display()
 				  midW, 0, -midH,
 				  0, 0, -1);		
 	} else if (current_perspective == PERSPECTIVE) {
-		gluLookAt(camera_xoffset, GRID_SIZE, camera_zoffset,
+		gluLookAt(camera_xoffset, GRID_SIZE * 1.2f, camera_zoffset,
 				  midW, 0, -midH,
 				  0, 1, 0);
 	} else {
@@ -167,12 +171,8 @@ void display()
 	glPopMatrix();
 
 	//draw game info overlay 
-	if (dead) {
-		draw_death();
-	} else {
-		draw_hud();
-	}
-
+	draw_hud();
+	
 	glutSwapBuffers(); 
 
 }
@@ -230,58 +230,77 @@ void draw_hud() {
 			glLoadIdentity();			
 
 			glDisable(GL_LIGHTING);
-			//enclosing box
-			// glColor3f(0.8f, 0.8f, 0.8f);
-			glColor3f(1.0f, 1.0f, 0.0f);
+			//enclosing container
+			int container1_width = static_cast<int>(width * 0.2f);
+			int container1_height = static_cast<int>(height * 0.15f);
 
-			int box_width = static_cast<int>(width * 0.3f);
-			int box_height = static_cast<int>(height * 0.2f);
+			glTranslatef(0, height - container1_height, 0);
 
-			glTranslatef(width - box_width, height - box_height, 0);
-
-			glBegin(GL_LINE_LOOP);
+/*			glBegin(GL_LINE_LOOP);
 				glVertex3f(0.0f, 0.0f, 0.0f);
-				glVertex3f(box_width, 0.0f, 0.0f);
-				glVertex3f(box_width, box_height, 0.0f);
-				glVertex3f(0.0f, box_height, 0.0f);
-			glEnd();
-
-			//score and time
-
+				glVertex3f(container1_width, 0.0f, 0.0f);
+				glVertex3f(container1_width, container1_height, 0.0f);
+				glVertex3f(0.0f, container1_height, 0.0f);
+			glEnd();*/
 
 			glPushMatrix();
-				glColor3f(1.0f, 0.0f, 0.0f);
+				glColor3f(0.6f, 0.0f, 0.2f);
 
+				//score and time
 
 				float secs = (int) (total_time / 100.0f) / 10.0f;
 				std::ostringstream convert_t;
 				convert_t << secs;
 				std::string secs_str (convert_t.str()); 
-				std::string time = "time:" +secs_str + "s";
-				draw_text(10.0f, box_height * 0.8f, time);
+				std::string time = "time: " +secs_str + "s";
+				draw_text(20.0f, container1_height * 0.7f, time); 
 
 				std::ostringstream convert_s;
 				convert_s << game.get_score();
 				std::string score_str = convert_s.str(); 
 				std::string score = "score: " + score_str; 
-				draw_text(10.0f, box_height * 0.8f - 30.0f, score);
+				draw_text(20.0f, container1_height * 0.7f - 30.0f * text_scale, score);
 
-				std::string instructions [] = { 
-					"arrow keys to move", 
-					"spacebar to pause",
-					"'wasd' to move camera",
-					"'p' to cycle camera", 
-					"'q' to quit"
-				};
-				int num_instructions = 5;
 
-				for (int i = 0; i < num_instructions; i++) {
-					draw_text(10.0f, box_height * 0.8f - (60.0f + 30*i), instructions[i]);
-				}				
+				//draw instructions
+				int container2_width = static_cast<int>(width * 0.50f);
+				int container2_height = static_cast<int>(height * 0.15f);
+				glTranslatef(width - container2_width, 0.0f, 0.0f);
+
+/*				glBegin(GL_LINE_LOOP);
+					glVertex3f(0.0f, 0.0f, 0.0f);
+					glVertex3f(container2_width, 0.0f, 0.0f);
+					glVertex3f(container2_width, container2_height, 0.0f);
+					glVertex3f(0.0f, container2_height, 0.0f);
+				glEnd();*/
+				if (!dead) {
+					if (!instructions) {
+						std::string instruction_str = "i to toggle instructions";
+						draw_text(0.0f, container2_height * 0.7, instruction_str); 
+					} else {
+						std::string instructions [] = { 
+							"arrow keys to move", 
+							"spacebar to pause",
+							"'v/V' to change velocity",
+							"'wasd' to move camera",
+							"'p' to cycle camera", 
+							"'q' to quit"
+						};
+						int num_instructions = 6;
+
+						for (int i = 0; i < num_instructions; i++) {
+							//gaps between lines also scale
+							draw_text(10.0f, container2_height * 0.8f - (20.0f * text_scale * i), instructions[i]);
+						}				
+					}
+				} else {
+					std::string death_text1 = "You died.";
+					std::string death_text2 = "Play again? (y/n)";
+					draw_text(0.0f, container2_height * 0.7, death_text1); 
+					draw_text(0.0f, container2_height * 0.7 - 30.0f * text_scale, death_text2); 
+				}	
 
 			glPopMatrix();
-
-
 			glEnable(GL_LIGHTING);
 		glPopMatrix();
 
@@ -289,106 +308,27 @@ void draw_hud() {
 	glPopMatrix();
 }
 
-void draw_death() {
-	//get viewport dimensions
-	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
-	int width = viewport[2];
-	int height = viewport[3];
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-		glLoadIdentity();
-
-		gluOrtho2D(0, width, 0, height);
-
-		//position in top right
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-			glLoadIdentity();			
-
-			glDisable(GL_LIGHTING);
-			//enclosing box
-			// glColor3f(0.8f, 0.8f, 0.8f);
-			glColor3f(1.0f, 1.0f, 0.0f);
-
-			int box_width = static_cast<int>(width * 0.3f);
-			int box_height = static_cast<int>(height * 0.2f);
-
-			glTranslatef((width - box_width) / 2.0f, (height - box_height) / 2.0f, 0);
-
-			glBegin(GL_POLYGON);
-				glVertex3f(0.0f, 0.0f, 0.0f);
-				glVertex3f(box_width, 0.0f, 0.0f);
-				glVertex3f(box_width, box_height, 0.0f);
-				glVertex3f(0.0f, box_height, 0.0f);
-			glEnd();
-
-			//score and time
-
-
-			glPushMatrix();
-				glColor3f(1.0f, 0.0f, 0.0f);
-
-				std::string death_text = "You're dead kiddo. Play again? (y/n)";
-				draw_text(10.0f, box_height - 50.0f, death_text);
-
-				// float secs = (int) (total_time / 100.0f) / 10.0f;
-				// std::ostringstream convert_t;
-				// convert_t << secs;
-				// std::string secs_str (convert_t.str()); 
-				// std::string time = "time:" +secs_str + "s";
-				// draw_text(10.0f, box_height * 0.8f, time);
-
-				// std::ostringstream convert_s;
-				// convert_s << game.get_score();
-				// std::string score_str = convert_s.str(); 
-				// std::string score = "score: " + score_str; 
-				// draw_text(10.0f, box_height * 0.8f - 30.0f, score);
-
-				// std::string instructions [] = { 
-				// 	"arrow keys to move", 
-				// 	"spacebar to pause",
-				// 	"'wasd' to move camera",
-				// 	"'p' to cycle camera", 
-				// 	"'q' to quit"
-				// };
-				// int num_instructions = 5;
-
-				// for (int i = 0; i < num_instructions; i++) {
-				// 	draw_text(10.0f, box_height * 0.8f - (60.0f + 30*i), instructions[i]);
-				// }				
-
-			glPopMatrix();
-
-
-			glEnable(GL_LIGHTING);
-		glPopMatrix();
-
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-}
-
-//adapted from lab5
 void draw_text(const float x, const float y, const std::string & text)
 {
-	const float scale = 0.25f;
+	float scale = 0.15f * text_scale; //scale by text_scale
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 		glTranslatef(x, y, 0.1f);
 		glScalef(scale, scale, 1.0f);
+		glLineWidth(1.5f);
 		for (size_t i = 0; i < text.length(); i++) {
    			glutStrokeCharacter(GLUT_STROKE_ROMAN, text[i]);
 		}
+		glLineWidth(1.0f);
 	glPopMatrix();
 }
 
-
 long get_time() {
+	//return time in millis. 
 	timespec tp;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-	// std::cout << ctime(&(tp.tv_sec)) << std::endl;
+	//CLOCK_MONOTONIC_RAW doesn't return wall time but not necessary
+	clock_gettime(CLOCK_MONOTONIC_RAW, &tp); 
 	long milis = tp.tv_sec * 1000;
 	milis += static_cast<long>(tp.tv_nsec / 1000000.0f);
 	return milis; 
@@ -396,8 +336,7 @@ long get_time() {
 
 void init()
 {
-
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f); 
+	glClearColor(0.027f, 0.125f, 0.277f, 0.0f); 
 
 	// make grid display list
 	g_grid = make_grid(GRID_SIZE, GRID_SIZE);
@@ -419,13 +358,15 @@ void orthographic_vv() {
 	glLoadIdentity();
 
 	float half_GRID_SIZE = GRID_SIZE / 2.0f;
-	glOrtho(-half_GRID_SIZE - 1, half_GRID_SIZE + 1, -half_GRID_SIZE - 1, half_GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE + 2);
+	//enough room for grid and game info
+	glOrtho(-half_GRID_SIZE - 1, half_GRID_SIZE + 1, -half_GRID_SIZE - 1, half_GRID_SIZE + 5, GRID_SIZE - 2, GRID_SIZE + 2);
 }
 
 void perspective_vv() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(60.0f, 1.0f, 0.01f, GRID_SIZE * 2.0f);
+	//aspect ratio ~5:4
+	gluPerspective(60.0f, 0.8f, 0.01f, GRID_SIZE * 2.0f);
 }
 
 void init_lights() {
@@ -433,9 +374,6 @@ void init_lights() {
 	float light_diffuse[] = {1.0, 0.9, 0.9, 1.0};
 	float light_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
-	// float light_ambient[] = {0.5, 0.5, 0.5, 1.0};
-	// float light_diffuse[] = {0.0, 1.0, 0.0, 1.0};
-	// float light_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
 	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
@@ -455,8 +393,10 @@ void idle()
 
 	total_time = timeMs - start_time; //get total gameplay time to display on screen
 	
+	//game advances its state by the time_elapsed, and returns alive state of snake
 	dead = !game.update(time_elapsed); 
 
+	//stop updating game state if dead
 	if (dead) {
 		glutIdleFunc(NULL);
 	}
@@ -468,8 +408,9 @@ void idle()
 }
 
 void reset() {
+	//reset camera controls and time
 	camera_xoffset = midW;
-	camera_zoffset = 0.0f; // change initial value = 0 + CONST
+	camera_zoffset = 0.0f; 
 	start_time = get_time();
 	total_time = start_time;
 	last_time = start_time;
@@ -478,7 +419,6 @@ void reset() {
 
 void visibility(int vis)
 {
-	std::cerr << "VIS EVENT" << std::endl;
 	//render iff window is visible
 	render = (vis == GLUT_VISIBLE) ? true : false;
 }
@@ -488,20 +428,22 @@ void reshape(int w, int h) {
 	if (current_perspective == ORTHOGRAPHIC) {
 		orthographic_vv();
 	} else {
+		//for PERSPECTIVE and POV
 		perspective_vv();
 	}
+
+	//scale text size
+	float w_ratio = w / INIT_VIEWPORT_WIDTH;
+	float h_ratio = h / INIT_VIEWPORT_HEIGHT;
+	text_scale = (w_ratio + h_ratio) / 2;
 }
 
-// will get which key was pressed and x and y positions if required
 void keyboard(unsigned char key, int, int)
 {
 	switch (key)
 	{
 		case 'q': 
 			exit(1); // quit!
-
-		//ADD BOUNDS TO CAMERA MOVEMENT E.G. MIN(MAX(0, CAMERA_XOFFSET), GRID_SIZE)
-
 		case 'w': 
 			camera_zoffset -= camera_delta; break;
 		case 'a':
@@ -516,16 +458,18 @@ void keyboard(unsigned char key, int, int)
 			if (current_perspective == ORTHOGRAPHIC) {
 				orthographic_vv();
 			} else {
+				//for PERSPECTIVE and POV
 				perspective_vv();
 			}
 			break;
 		case ' ':
+			//pause, if alive
 			if (!dead) {
 				if (!paused) {
 					glutIdleFunc(NULL);
 				} 
 				else {
-					//need to save time ellapsed etc. and update when resuming
+					//update time correctly
 					long curr_time = get_time();
 					long gap = curr_time - last_time;
 					last_time = curr_time;
@@ -555,13 +499,14 @@ void keyboard(unsigned char key, int, int)
 		case 'V':
 			game.increase_difficulty();
 			break;
-
+		case 'i':
+			instructions = !instructions;
 	}
 
 	glutPostRedisplay(); // force a redraw
 }
 
-// any special key pressed like arrow keys
+
 void special(int key, int, int)
 {
 	//if the game is paused don't accept input to change direction
@@ -595,12 +540,11 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv); 
 	glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH); 
-	// glutInitWindowSize(1012, 1012); 
-	glutInitWindowSize(512, 512); 
+	glutInitWindowSize(INIT_VIEWPORT_WIDTH, INIT_VIEWPORT_HEIGHT); 
 	glutInitWindowPosition(50, 50); 
 	glutCreateWindow("Snek"); 
-	glutDisplayFunc(display); 
 
+	glutDisplayFunc(display); 
 	glutKeyboardFunc(keyboard); 
 	glutSpecialFunc(special); 
 	glutVisibilityFunc(visibility); 
